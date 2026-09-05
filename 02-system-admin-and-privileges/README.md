@@ -1,10 +1,10 @@
-# 02 — System Administration & Privileges `[Level 1: Administration]`
+# 02: System Administration & Privileges `[Level 1: Administration]`
 
-Privilege is the currency of an operating system. Almost every attack chain ends
-in the same place: *turn the access I have into more access than I should have.*
-To exploit — or defend — that, you must understand how Linux models identity,
-permissions, and processes. This module is the bridge from "I can use the shell"
-to "I understand who is allowed to do what, and why."
+Privilege determines what every process on a system is allowed to do. Most
+attack chains end in the same place: turning the access you have into more
+access than you should have. To exploit or defend that, you need to understand
+how Linux models identity, permissions, and processes. This module covers that
+model and how to audit it.
 
 ---
 
@@ -14,12 +14,12 @@ Every process on Linux runs as a **user** (UID) and one or more **groups**
 (GIDs). The kernel checks those IDs against a file's owner/group/mode bits on
 every access. There is exactly one all-powerful account:
 
-- **root** — UID **0**. The kernel skips most permission checks for UID 0. Root
+- **root**: UID **0**. The kernel skips most permission checks for UID 0. Root
   can read/write any file, bind low ports, load kernel modules, and become any
   other user. This is why every privilege-escalation exploit is ultimately
   "become UID 0."
 
-Regular users (UID ≥ 1000 for humans on Debian/Kali; 1–999 for system service
+Regular users (UID ≥ 1000 for humans on Debian/Kali; 1-999 for system service
 accounts) are constrained to what their UID/GID permits.
 
 ```bash
@@ -36,14 +36,14 @@ Expected:
 uid=1000(kali) gid=1000(kali) groups=1000(kali),27(sudo),...
 ```
 
-Membership in **`sudo`** (group 27 on Debian/Kali) is what lets `kali` escalate
-— note that for later.
+Membership in **`sudo`** (group 27 on Debian/Kali) is what lets `kali` escalate.
+Note that for later.
 
 ---
 
 ## 2. `/etc/passwd` and `/etc/shadow` (where accounts live)
 
-**`/etc/passwd`** — world-readable account registry. One line per account:
+**`/etc/passwd`** is the world-readable account registry. One line per account:
 
 ```text
 kali:x:1000:1000:Kali,,,:/home/kali:/bin/bash
@@ -56,7 +56,7 @@ kali:x:1000:1000:Kali,,,:/home/kali:/bin/bash
  └ username
 ```
 
-**`/etc/shadow`** — root-readable **only**; holds the hashed passwords:
+**`/etc/shadow`** is root-readable **only** and holds the hashed passwords:
 
 ```text
 kali:$y$j9T$...hash...:19600:0:99999:7:::
@@ -71,14 +71,14 @@ kali:$y$j9T$...hash...:19600:0:99999:7:::
 cat /etc/passwd
 grep "bash" /etc/passwd          # accounts with an interactive shell
 
-# [Level 1: Intermediate] Shadow requires root — this is a privilege boundary
+# [Level 1: Intermediate] Shadow requires root; this is a privilege boundary
 sudo cat /etc/shadow             # works
 cat /etc/shadow                  # -> Permission denied (that's the point)
 ```
 
 > **Why this matters offensively:** if a misconfiguration makes `/etc/shadow`
-> readable (or writable), it's game over — you can crack or replace the root
-> hash. Defenders audit its mode religiously (should be `640 root:shadow`).
+> readable (or writable), an attacker can crack or replace the root hash.
+> Defenders should check its mode regularly (it should be `640 root:shadow`).
 
 ---
 
@@ -87,12 +87,12 @@ cat /etc/shadow                  # -> Permission denied (that's the point)
 Two different mechanisms, often confused:
 
 ```bash
-# [Level 1: Intermediate] su — SWITCH USER (needs the TARGET's password)
+# [Level 1: Intermediate] su: switch user (needs the TARGET's password)
 su -                 # become root; prompts for ROOT's password, loads root's env
 su - kali            # become 'kali'; the trailing '-' gives a full login shell
 exit                 # drop back to your previous identity
 
-# [Level 1: Intermediate] sudo — run ONE command as root (needs YOUR password)
+# [Level 1: Intermediate] sudo: run ONE command as root (needs YOUR password)
 sudo apt update              # run a single command as root
 sudo -i                      # interactive root shell (like 'su -' but via sudo)
 sudo -u www-data whoami      # run as a DIFFERENT non-root user
@@ -106,14 +106,14 @@ Key distinction:
 | Password prompted | the **target** account's | **your own** |
 | Scope | opens a full shell | typically one command |
 | Auditing | weak | every invocation logged to `/var/log/auth.log` |
-| Best practice | avoid sharing root's password | preferred — accountable & granular |
+| Best practice | avoid sharing root's password | preferred: accountable & granular |
 
 ---
 
-## 4. `/etc/sudoers` — who may run what as whom
+## 4. `/etc/sudoers`: who may run what as whom
 
 `sudo` is governed by `/etc/sudoers` (and drop-ins in `/etc/sudoers.d/`).
-**Always** edit it with `visudo`, which syntax-checks before saving — a broken
+**Always** edit it with `visudo`, which syntax-checks before saving. A broken
 sudoers file can lock everyone out of root.
 
 ```bash
@@ -141,7 +141,7 @@ kali    ALL=(ALL) NOPASSWD: /usr/bin/nmap # kali runs nmap as root, no password
 deploy  ALL=(www-data) /usr/bin/systemctl restart app
 ```
 
-> ⚠️ **`NOPASSWD` and overly broad command paths are classic privesc.** A rule
+> **`NOPASSWD` and overly broad command paths are classic privesc.** A rule
 > like `NOPASSWD: /usr/bin/vim` lets a user open a root shell from inside vim
 > (`:!bash`). Auditing sudoers for shell-spawning binaries (see
 > [GTFOBins](https://gtfobins.github.io)) is a core assessment step.
@@ -167,7 +167,7 @@ passwd                           # change YOUR OWN password
 # Add a user to a supplementary group (-a APPEND, -G groups)
 sudo usermod -aG sudo analyst    # grant sudo rights
 sudo usermod -aG wireshark analyst
-# ⚠️ ALWAYS use -a with -G. 'usermod -G sudo analyst' (no -a) REPLACES all
+# WARNING: ALWAYS use -a with -G. 'usermod -G sudo analyst' (no -a) REPLACES all
 #    supplementary groups, silently removing the user from every other group.
 
 # Inspect group membership
@@ -187,9 +187,9 @@ sudo userdel -r analyst          # delete + remove home dir (-r)
 
 The three account files these commands touch:
 
-- `/etc/passwd` — the account
-- `/etc/shadow` — the password hash
-- `/etc/group` — group membership (`sudo:x:27:kali,analyst`)
+- `/etc/passwd`: the account
+- `/etc/shadow`: the password hash
+- `/etc/group`: group membership (`sudo:x:27:kali,analyst`)
 
 ---
 
@@ -208,9 +208,9 @@ Every file/dir has a **type**, three permission triads (**owner**, **group**,
 ```
 
 For directories the bits mean something slightly different:
-- **r** — list the names inside
-- **w** — create/delete entries inside
-- **x** — enter/traverse the directory (`cd` into it, access files by path)
+- **r**: list the names inside
+- **w**: create/delete entries inside
+- **x**: enter/traverse the directory (`cd` into it, access files by path)
 
 ### Octal vs symbolic
 
@@ -236,7 +236,7 @@ Quick octal reference:
 | `644` | `rw-r--r--` | ordinary readable files |
 | `700` | `rwx------` | private scripts / `~/.ssh` |
 | `755` | `rwxr-xr-x` | executables, public directories |
-| `777` | `rwxrwxrwx` | **almost always wrong** — world-writable |
+| `777` | `rwxrwxrwx` | **almost always wrong**: world-writable |
 
 ---
 
@@ -262,20 +262,20 @@ Access: (0644/-rw-r--r--)  Uid: ( 1000/ kali)   Gid: ( 1000/ kali)
 
 ---
 
-## 8. Special bits: SUID, SGID, sticky — the privesc goldmine
+## 8. Special bits: SUID, SGID, and sticky
 
 Beyond rwx there are three special bits:
 
-- **SUID** (`chmod u+s`, shows as `s` in owner-execute) — the program runs with
+- **SUID** (`chmod u+s`, shows as `s` in owner-execute): the program runs with
   the **file owner's** UID, not the caller's. `passwd` is SUID-root so any user
   can update their hash in root-owned `/etc/shadow`.
-- **SGID** (`chmod g+s`) — runs as the file's group; on directories, new files
+- **SGID** (`chmod g+s`): runs as the file's group; on directories, new files
   inherit the directory's group.
-- **Sticky** (`chmod +t`, `t` on other-execute) — on a dir (`/tmp`), only a
+- **Sticky** (`chmod +t`, `t` on other-execute): on a dir (`/tmp`), only a
   file's owner can delete it, even though the dir is world-writable.
 
 ```bash
-# [Level 2+: Advanced / Field Ops] Audit SUID binaries — THE classic first step
+# [Level 2+: Advanced / Field Ops] Audit SUID binaries, THE classic first step
 find / -perm -u=s -type f 2>/dev/null            # all SUID files
 find / -perm -g=s -type f 2>/dev/null            # all SGID files
 find / -perm -4000 -type f -exec ls -la {} \; 2>/dev/null   # SUID w/ details
@@ -315,7 +315,7 @@ htop                       # friendlier top (sudo apt install htop)
 
 # [Level 1: Intermediate] Signal / terminate processes
 kill 1337                  # polite: sends SIGTERM (15), lets it clean up
-kill -9 1337               # forceful: SIGKILL (9), cannot be caught — last resort
+kill -9 1337               # forceful: SIGKILL (9), cannot be caught, last resort
 kill -HUP 1337             # SIGHUP (1): many daemons reload config on this
 pkill -f "python3 http"    # kill by matching the command line
 killall nginx              # kill all processes named nginx
@@ -353,7 +353,7 @@ journalctl -u ssh --since "10 min ago"
 ```
 
 > **Offense/defense:** `systemctl list-unit-files --state=enabled` and the
-> contents of `/etc/systemd/system/` are where persistence hides — a malicious
+> contents of `/etc/systemd/system/` are where persistence hides, a malicious
 > unit that re-launches an implant at boot. Baseline enabled units.
 
 ---
@@ -387,5 +387,5 @@ journalctl -u ssh --since "10 min ago"
 
 ---
 
-➡️ Practice these on the target lab and your own box in
+ Practice these on the target lab and your own box in
 **[lab-exercises.md](lab-exercises.md)**.

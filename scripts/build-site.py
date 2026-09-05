@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""build-site.py — Generate the GitHub Pages site from the repo content.
+"""build-site.py: generate the GitHub Pages site from the repo content.
 
 This is what makes the docs site *dynamic*: nothing about the navigation is
 hardcoded. The script walks the repository, discovers every Markdown file,
@@ -13,7 +13,7 @@ from each file's first ``# heading``, and emits:
     content/<path>.md     (every discovered Markdown file, paths preserved)
 
 Add a new module directory or a new cheatsheet, push, and it appears in the
-site automatically — no edits here or in the front-end required.
+site automatically; no edits here or in the front-end are required.
 
 Usage:
     python scripts/build-site.py [--out _site]
@@ -65,7 +65,7 @@ def section_title(dir_name: str) -> str:
     """Section heading: keep the numeric prefix as a badge-friendly label."""
     m = re.match(r"^(\d+)[-_](.*)$", dir_name)
     if m:
-        return f"{m.group(1)} — {prettify(m.group(2))}"
+        return f"{m.group(1)}. {prettify(m.group(2))}"
     return prettify(dir_name)
 
 
@@ -166,7 +166,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     manifest = {
         "site": {
             "title": "Kali Linux for Beginners",
-            "subtitle": "Zero to Field-Ready",
+            "subtitle": "",
             "repo": "TMHSDigital/Kali-Linux-for-beginners",
             "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         },

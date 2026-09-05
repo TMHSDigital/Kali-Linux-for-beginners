@@ -1,5 +1,5 @@
 # =============================================================================
-# Kali Linux for Beginners — Isolated Practice Target Lab
+# Kali Linux for Beginners: Isolated Practice Target Lab
 # =============================================================================
 # Spins up deliberately insecure services on a private, static bridge network so
 # you can practice host discovery, port scanning, cleartext-credential
@@ -45,10 +45,10 @@ services:
           cat > /usr/share/nginx/html/index.html <<'HTML'
         <!doctype html>
         <html lang="en">
-        <head><meta charset="utf-8"><title>Lab Login — INSECURE DEMO</title></head>
+        <head><meta charset="utf-8"><title>Lab Login (INSECURE DEMO)</title></head>
         <body style="font-family:sans-serif;max-width:32rem;margin:4rem auto">
           <h1>ACME Intranet (Lab Target)</h1>
-          <p style="color:#b00">Plain HTTP — credentials are sent in cleartext on purpose.</p>
+          <p style="color:#b00">Plain HTTP: credentials are sent in cleartext on purpose.</p>
           <form action="/login" method="POST">
             <p><label>Username <input name="username" value="admin"></label></p>
             <p><label>Password <input name="password" type="password" value="hunter2"></label></p>
@@ -83,7 +83,7 @@ services:
   # ---------------------------------------------------------------------------
   # ftp-service: vsftpd with anonymous access enabled. FTP authentication and
   # data are unencrypted, so USER/PASS and directory listings are trivially
-  # recoverable from a capture — the classic "why not plain FTP" lesson.
+  # recoverable from a capture; the classic "why not plain FTP" case.
   # ---------------------------------------------------------------------------
   ftp-service:
     image: fauria/vsftpd

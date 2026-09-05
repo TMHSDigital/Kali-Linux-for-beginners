@@ -1,6 +1,6 @@
-# Kali Survival Commands — Quick Reference
+# Kali Survival Commands: Quick Reference
 
-High-density command reference for the Linux core (modules 01–02). No filler.
+Command reference for the Linux core (modules 01-02).
 
 ---
 

@@ -22,8 +22,8 @@ or OS/packet-level features needs `sudo`. Scan only authorized targets.
 
 | Flag | Action |
 |------|--------|
-| `-sn` | Ping scan — discovery only, no ports |
-| `-Pn` | Skip discovery — treat all hosts as up |
+| `-sn` | Ping scan: discovery only, no ports |
+| `-Pn` | Skip discovery: treat all hosts as up |
 | `-PS<ports>` | TCP SYN ping to ports |
 | `-PA<ports>` | TCP ACK ping |
 | `-PU<ports>` | UDP ping |
@@ -153,7 +153,7 @@ nmap -sV -oX - 172.28.0.10 | ../scripts/parse-nmap-xml.py -
 |-------|---------|
 | `open` | Service listening |
 | `closed` | Host up, nothing listening (RST) |
-| `filtered` | No response — firewall dropped it |
+| `filtered` | No response: firewall dropped it |
 | `unfiltered` | Reachable but state undetermined (ACK scan) |
 | `open\|filtered` | Can't tell (common in UDP/NULL/FIN) |
 | `closed\|filtered` | Can't tell (idle scan) |

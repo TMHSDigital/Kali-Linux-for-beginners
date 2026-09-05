@@ -1,8 +1,8 @@
 name: Deploy docs to GitHub Pages
 
 # Rebuilds and redeploys the site on every push to main. The build script
-# scans the repo, so new modules/cheatsheets appear automatically — no site
-# edits required.
+# scans the repo, so new modules/cheatsheets appear automatically; no site
+# edits are required.
 
 on:
   push:

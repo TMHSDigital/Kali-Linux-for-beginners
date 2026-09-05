@@ -1,5 +1,5 @@
 /* =========================================================================
-   Kali Linux for Beginners — docs SPA
+   Kali Linux for Beginners docs single-page app
    Loads a generated manifest.json, renders Markdown client-side, and builds
    navigation dynamically. Nothing about the content is hardcoded here.
    ========================================================================= */
@@ -38,7 +38,6 @@
   /* ---------------- Theme ---------------- */
   function applyTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
-    el.themeToggle.textContent = theme === "dark" ? "🌙" : "☀️";
     el.hljsTheme.href = HLJS[theme] || HLJS.dark;
     try { localStorage.setItem("theme", theme); } catch (_) {}
   }
@@ -74,7 +73,7 @@
     if (m.site && m.site.repo) {
       el.repoLink.href = `https://github.com/${m.site.repo}`;
     }
-    document.title = `${m.site.title} — ${m.site.subtitle}`;
+    document.title = m.site.title;
     renderNav();
     if (m.site && m.site.generated) {
       const d = new Date(m.site.generated);
@@ -200,7 +199,7 @@
       el.doc.innerHTML = `<h1>Not found</h1><p class="muted">No document at <code>${path}</code>.</p>`;
       return;
     }
-    el.doc.innerHTML = `<p class="muted">Loading…</p>`;
+    el.doc.innerHTML = `<p class="muted">Loading.</p>`;
     let md;
     try {
       const res = await fetch("content/" + path, { cache: "no-cache" });
@@ -341,7 +340,7 @@
       route();
     } catch (e) {
       el.doc.innerHTML =
-        `<h1>Failed to load</h1><p class="muted">${e.message}. If you opened this file directly, serve it over HTTP (e.g. <code>python -m http.server</code>) — browsers block <code>fetch()</code> on <code>file://</code>.</p>`;
+        `<h1>Failed to load</h1><p class="muted">${e.message}. If you opened this file directly, serve it over HTTP (e.g. <code>python -m http.server</code>); browsers block <code>fetch()</code> on <code>file://</code>.</p>`;
     }
   }
   boot();

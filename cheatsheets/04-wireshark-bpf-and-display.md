@@ -6,7 +6,7 @@ them.
 
 ---
 
-## Capture filters (BPF) — before capture (`-f` in tshark)
+## Capture filters (BPF): before capture (`-f` in tshark)
 
 | Filter | Matches |
 |--------|---------|
@@ -23,7 +23,7 @@ them.
 | `vlan` / `vlan 100` | VLAN-tagged |
 | `tcp[tcpflags] & tcp-syn != 0` | SYN packets |
 
-## Display filters — addressing / transport
+## Display filters: addressing / transport
 
 | Filter | Matches |
 |--------|---------|
@@ -40,7 +40,7 @@ them.
 | `frame.len > 1000` | Large frames |
 | `!(arp or dns)` | Hide noise |
 
-## Display filters — HTTP
+## Display filters: HTTP
 
 | Filter | Matches |
 |--------|---------|
@@ -56,7 +56,7 @@ them.
 | `http.user_agent contains "curl"` | By UA |
 | `http.file_data` | Body/payload present |
 
-## Display filters — credentials / cleartext
+## Display filters: credentials / cleartext
 
 | Filter | Matches |
 |--------|---------|
@@ -70,7 +70,7 @@ them.
 | `smtp.req.command == "AUTH"` | SMTP auth |
 | `frame matches "(?i)pass.?word"` | Regex payload |
 
-## Display filters — DNS
+## Display filters: DNS
 
 | Filter | Matches |
 |--------|---------|
@@ -82,7 +82,7 @@ them.
 | `dns.flags.rcode == 3` | NXDOMAIN |
 | `dns.qry.name.len > 40` | Possible tunneling |
 
-## Display filters — TLS / HTTPS
+## Display filters: TLS / HTTPS
 
 | Filter | Matches |
 |--------|---------|
@@ -93,7 +93,7 @@ them.
 | `tls.handshake.type == 11` | Certificate |
 | `tls.record.version == 0x0301` | TLS 1.0 (weak) |
 
-## Display filters — 802.11 (wireless captures)
+## Display filters: 802.11 (wireless captures)
 
 | Filter | Matches |
 |--------|---------|
@@ -115,9 +115,9 @@ them.
 | `&&` | `and` | `http && ip.addr==X` |
 | `\|\|` | `or` | `ftp \|\| http` |
 | `!` | `not` | `!arp` |
-| `contains` | — | `tcp contains "PASS"` |
+| `contains` |: | `tcp contains "PASS"` |
 | `matches` | `~` | `frame matches "pass"` |
-| `in` | — | `tcp.port in {80 443}` |
+| `in` |: | `tcp.port in {80 443}` |
 
 ## tshark essentials
 

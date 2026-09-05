@@ -1,4 +1,4 @@
-# Lab Exercises — System Administration & Privileges
+# Lab Exercises: System Administration & Privileges
 
 These exercises create throwaway users, groups, and files, then walk through
 permission changes, a simulated SUID privilege-escalation audit, and service
@@ -13,7 +13,7 @@ A cleanup section at the end removes everything.
 
 ---
 
-## Exercise 1 — Read the account files
+## Exercise 1: Read the account files
 
 **Goal:** Locate your own line in `/etc/passwd` and confirm `/etc/shadow` is a
 privilege boundary.
@@ -21,14 +21,14 @@ privilege boundary.
 ```bash
 grep "^$(whoami):" /etc/passwd
 sudo grep "^$(whoami):" /etc/shadow      # works with sudo
-cat /etc/shadow                          # Permission denied — expected
+cat /etc/shadow                          # Permission denied, expected
 ```
 
 **Self-grade:**
 
 ```bash
 if cat /etc/shadow >/dev/null 2>&1; then
-  echo "FAIL: /etc/shadow is readable by you — that's a misconfiguration!"
+  echo "FAIL: /etc/shadow is readable by you, that's a misconfiguration!"
 else
   echo "PASS: /etc/shadow is protected from non-root users"
 fi
@@ -36,7 +36,7 @@ fi
 
 ---
 
-## Exercise 2 — Create a user and group
+## Exercise 2: Create a user and group
 
 **Goal:** Create user `analyst` with a home dir and bash shell, plus a
 `pentesters` group, and put `analyst` in it.
@@ -59,9 +59,9 @@ echo PASS || echo "FAIL: check user creation / group / home dir"
 
 ---
 
-## Exercise 3 — The `-aG` trap
+## Exercise 3: The `-aG` trap
 
-**Goal:** Understand why `usermod -G` without `-a` is dangerous — *do this
+**Goal:** Understand why `usermod -G` without `-a` is dangerous, *do this
 safely by observing, not by breaking your own account.*
 
 ```bash
@@ -72,7 +72,7 @@ sudo usermod -aG sudo analyst
 id analyst
 # Observe: analyst is now in analyst, pentesters, AND sudo.
 # If we had run 'usermod -G sudo analyst' (no -a), analyst would be in ONLY
-# sudo — silently removed from pentesters. Never omit -a.
+# sudo, silently removed from pentesters. Never omit -a.
 ```
 
 **Self-grade:**
@@ -80,12 +80,12 @@ id analyst
 ```bash
 groups analyst | grep -q pentesters && groups analyst | grep -q sudo \
   && echo "PASS: both groups retained (you used -aG)" \
-  || echo "FAIL: analyst lost a group — did you forget -a?"
+  || echo "FAIL: analyst lost a group, did you forget -a?"
 ```
 
 ---
 
-## Exercise 4 — Octal and symbolic permissions
+## Exercise 4: Octal and symbolic permissions
 
 **Goal:** Create files and set precise modes both ways.
 
@@ -108,7 +108,7 @@ k=$(stat -c '%a' key.pem); p=$(stat -c '%a' public.txt)
 
 ---
 
-## Exercise 5 — Ownership
+## Exercise 5: Ownership
 
 **Goal:** Give a file to `analyst:pentesters`.
 
@@ -128,7 +128,7 @@ owner=$(stat -c '%U:%G' shared-report.txt)
 
 ---
 
-## Exercise 6 — SUID audit (privilege-escalation reconnaissance)
+## Exercise 6: SUID audit (privilege-escalation reconnaissance)
 
 **Goal:** Enumerate SUID binaries and reason about which are dangerous.
 
@@ -144,7 +144,7 @@ grep -E "passwd|sudo|su$" /tmp/suid.list
 
 ```bash
 grep -q "/usr/bin/sudo" /tmp/suid.list \
-  && echo "PASS: found expected SUID binaries — now compare against GTFOBins" \
+  && echo "PASS: found expected SUID binaries, now compare against GTFOBins" \
   || echo "FAIL: sudo should be SUID; re-run the find"
 ```
 
@@ -154,7 +154,7 @@ SUID-root, an attacker could leverage it to become root. Look each one up on
 
 ---
 
-## Exercise 7 — Simulated privesc via a SUID binary (safe, self-contained)
+## Exercise 7: Simulated privesc via a SUID binary (safe, self-contained)
 
 **Goal:** *Demonstrate* the concept in a sandbox so you understand why SUID
 misconfiguration is fatal. We make a harmless copy of `bash` SUID-root, show it
@@ -177,17 +177,17 @@ uid=1000(kali) gid=1000(kali) euid=0(root) egid=0(root) groups=...
 ```
 
 The **euid=0(root)** proves you executed code as root from an unprivileged
-account — exactly what an attacker wants.
+account, exactly what an attacker wants.
 
 **Self-grade:**
 
 ```bash
 /tmp/rootbash -p -c 'id -u' 2>/dev/null | grep -q '^0$' \
-  && echo "PASS: SUID bash yielded euid 0 — lesson learned" \
+  && echo "PASS: SUID bash yielded euid 0, lesson learned" \
   || echo "FAIL: setup didn't take (check chmod 4755)"
 ```
 
-**⚠️ Clean up this landmine immediately:**
+** Clean up this landmine immediately:**
 
 ```bash
 sudo rm -f /tmp/rootbash
@@ -196,7 +196,7 @@ echo "Removed the SUID bash. Never leave one of these on a real system."
 
 ---
 
-## Exercise 8 — sudoers enumeration
+## Exercise 8: sudoers enumeration
 
 **Goal:** See what your accounts can do via sudo.
 
@@ -211,7 +211,7 @@ run-as user, allowed hosts, and command list mean in any rule shown.
 
 ---
 
-## Exercise 9 — Process management
+## Exercise 9: Process management
 
 **Goal:** Start a background process, find it, signal it politely, then force
 it.
@@ -234,7 +234,7 @@ pgrep -f "sleep 600" >/dev/null && echo "FAIL: still running" || echo "PASS: pro
 
 ---
 
-## Exercise 10 — Service management with systemd
+## Exercise 10: Service management with systemd
 
 **Goal:** Query, start, and inspect a service. (Uses ssh; substitute any
 installed service, or `sudo apt install openssh-server` first.)
@@ -251,12 +251,12 @@ journalctl -u ssh --since "5 min ago" --no-pager | tail -n 5
 ```bash
 systemctl is-active ssh 2>/dev/null | grep -q "active" \
   && echo "PASS: ssh is active" \
-  || echo "SKIP: ssh not installed or no systemd (WSL/container) — that's OK"
+  || echo "SKIP: ssh not installed or no systemd (WSL/container), that's OK"
 ```
 
 ---
 
-## Cleanup — remove everything this lab created
+## Cleanup: remove everything this lab created
 
 ```bash
 sudo userdel -r analyst 2>/dev/null
@@ -283,5 +283,5 @@ echo "Lab 02 artifacts removed."
 | 9 | Background jobs, `pgrep`, `kill` |
 | 10 | `systemctl` / `journalctl` |
 
-All PASS/SKIP and you're ready for **[module 03 — Network Recon &
+All PASS/SKIP and you're ready for **[module 03, Network Recon &
 Nmap](../03-network-recon-and-nmap/)**.

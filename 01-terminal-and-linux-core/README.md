@@ -1,15 +1,15 @@
-# 01 — Terminal & Linux Core `[Level 0: Fundamentals]`
+# 01: Terminal & Linux Core `[Level 0: Fundamentals]`
 
 Everything in offensive and defensive security runs through the shell. Before
 you scan a network or crack a handshake, you must move around a Linux system
-without thinking about it. This module builds that muscle memory and explains
-*why* the filesystem and shell behave the way they do.
+without thinking about it. This module builds that fluency and explains how the
+filesystem and shell behave.
 
 ---
 
 ## 1. How the shell actually works (architecture)
 
-When you open a terminal in Kali you are running a **shell** — almost always
+When you open a terminal in Kali you are running a **shell**, almost always
 **Bash** (`/bin/bash`) or **Zsh** (Kali's default since 2020.4). The shell is a
 program that:
 
@@ -25,13 +25,13 @@ The three standard streams matter enormously later (redirection, log capture):
 
 | Stream | FD | Default | Purpose |
 |--------|----|---------|---------|
-| stdin  | 0  | keyboard | input to the program |
-| stdout | 1  | terminal | normal output |
-| stderr | 2  | terminal | errors / diagnostics |
+| stdin | 0 | keyboard | input to the program |
+| stdout | 1 | terminal | normal output |
+| stderr | 2 | terminal | errors / diagnostics |
 
 ### The Linux filesystem hierarchy (why paths look like they do)
 
-Linux has **one** tree rooted at `/` — there are no drive letters. Key branches:
+Linux has **one** tree rooted at `/`, there are no drive letters. Key branches:
 
 | Path | Contains |
 |------|----------|
@@ -62,8 +62,8 @@ kali@kali:~$
 
 The single most important character is the **last one**:
 
-- `$` — you are a **regular user**. Destructive mistakes are mostly contained.
-- `#` — you are **root** (or in a root shell). Every command runs with total
+- `$`: you are a **regular user**. Destructive mistakes are mostly contained.
+- `#`: you are **root** (or in a root shell). Every command runs with total
   authority; a typo like `rm -rf /` is catastrophic. Respect the `#`.
 
 ```bash
@@ -106,7 +106,7 @@ ls -lh           # human-readable sizes (K/M/G instead of bytes)
 ls -lt           # sort by modification time, newest first
 ```
 
-Reading `ls -la` output — every column matters later for permissions work:
+Reading `ls -la` output, every column matters later for permissions work:
 
 ```text
 drwxr-xr-x  2 kali kali 4096 Sep  5 12:00 Documents
@@ -166,7 +166,7 @@ cp report.txt report.bak
 cp -r engagement/ engagement-backup/
 cp -a engagement/ engagement-archive/   # -a keeps timestamps/perms/symlinks
 
-# Move OR rename (same command — moving to the same dir = rename)
+# Move OR rename (same command, moving to the same dir = rename)
 mv notes.txt engagement/acme/notes.txt
 mv oldname.txt newname.txt
 
@@ -176,13 +176,13 @@ rm -r engagement-backup/     # delete a directory tree
 rm -rf engagement-archive/   # -f = force, no prompts (DANGEROUS)
 ```
 
-> ⚠️ **`rm -rf` has no undo and no recycle bin.** There is no confirmation. A
-> stray space — `rm -rf / home/kali` instead of `rm -rf /home/kali` — will try
+> **`rm -rf` has no undo and no recycle bin.** There is no confirmation. A
+> stray space, `rm -rf / home/kali` instead of `rm -rf /home/kali`, will try
 > to erase the entire system. Habits that save you:
 > - Run `ls <target>` first to confirm you're pointing at the right thing.
 > - Prefer `rm -ri` (interactive) when unsure; it asks per file.
 > - Never run `rm -rf` as root against a variable you didn't sanity-check
->   (`rm -rf "$DIR"/` where `$DIR` is empty = `rm -rf /`).
+> (`rm -rf "$DIR"/` where `$DIR` is empty = `rm -rf /`).
 
 ---
 
@@ -210,12 +210,12 @@ grep -v "^#" /etc/ssh/sshd_config             # -v = INVERT: lines NOT matching
 
 Why `2>/dev/null`? `find /` walking the whole disk as a normal user hits many
 "Permission denied" errors on **stderr (fd 2)**. Redirecting fd 2 to the null
-device throws those away so only real matches (on stdout) remain — the first
+device throws those away so only real matches (on stdout) remain, the first
 practical use of stream redirection.
 
 ---
 
-## 7. Pipes and redirection (the heart of the shell) `[Level 1: Intermediate]`
+## 7. Pipes and redirection `[Level 1: Intermediate]`
 
 **Redirection** sends a stream to/from a file. **Pipes** connect one program's
 stdout to the next program's stdin. Composing small tools this way is the whole
@@ -245,8 +245,8 @@ cat access.log | grep 404 | sort | uniq -c | sort -rn   # top 404 URLs
 Understanding `2>&1` ordering (a classic gotcha):
 
 ```text
-command > file 2>&1    # ✅ stdout->file, THEN stderr->wherever stdout points (file)
-command 2>&1 > file    # ❌ stderr->terminal (copied first), THEN stdout->file
+command > file 2>&1    # CORRECT: stdout->file, THEN stderr->wherever stdout points (file)
+command 2>&1 > file    # WRONG:   stderr->terminal (copied first), THEN stdout->file
 ```
 
 Redirection is applied **left to right**; `2>&1` copies wherever fd 1 points *at
@@ -267,14 +267,14 @@ sudo !!                 # re-run previous command, this time with sudo
 
 Interactive recall:
 
-- **Ctrl-R** — reverse-search history as you type; Enter to run, Ctrl-R again
+- **Ctrl-R**: reverse-search history as you type; Enter to run, Ctrl-R again
   to cycle older matches.
-- **↑ / ↓** — walk through recent commands.
+- **↑ / ↓**: walk through recent commands.
 - History persists in `~/.bash_history` (or `~/.zsh_history`).
 
 ---
 
-## 9. Getting help (never memorize — look it up)
+## 9. Getting help (never memorize: look it up)
 
 ```bash
 man ls              # full manual page (q to quit, / to search)
@@ -294,10 +294,10 @@ Even at Level 0, notice the defensive angles:
   `~/.zsh_history`, and auditd logs to reconstruct what an intruder did.
   Attackers who set `HISTFILE=/dev/null` or `unset HISTFILE` leave a *different*
   tell. On systems you defend, ship history to a remote log so it can't be wiped.
-- **World-writable `/tmp`** is a favorite staging area for dropped tools — watch
+- **World-writable `/tmp`** is a favorite staging area for dropped tools: watch
   it.
 - **Unexpected SUID files** (`find / -perm -u=s`) are a top privilege-escalation
-  vector (covered in module 02) — baseline them so you notice new ones.
+  vector (covered in module 02), baseline them so you notice new ones.
 - **`/var/log` tampering:** truncated or missing logs are themselves a signal.
 
 ---
@@ -315,5 +315,5 @@ Even at Level 0, notice the defensive angles:
 
 ---
 
-➡️ Continue to the hands-on **[lab-exercises.md](lab-exercises.md)** to prove
+ Continue to the hands-on **[lab-exercises.md](lab-exercises.md)** to prove
 you can do all of the above from memory.

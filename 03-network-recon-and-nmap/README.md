@@ -1,10 +1,10 @@
-# 03 — Network Recon & Nmap `[Level 2: Reconnaissance]`
+# 03: Network Recon & Nmap `[Level 2: Reconnaissance]`
 
 Reconnaissance answers three questions before any exploitation: *what hosts are
 alive, what services do they run, and what versions are those services?* Nmap is
 the canonical tool for all three. This module explains the TCP/IP mechanics that
 make scanning work, then drills each scan type with the flags you'll actually
-use in the field — always against the isolated Docker lab from the repo root.
+use in the field, always against the isolated Docker lab from the repo root.
 
 > **Authorized targets only.** Everything here should be run against
 > `172.28.0.0/16` (the bundled lab) or infrastructure you own / have written
@@ -45,8 +45,8 @@ Before scanning others, map your own position on the network.
 # [Level 0: Fundamental] Interfaces and IP addresses
 ip a                       # all interfaces, IPs, MACs, up/down state
 ip -brief a                # compact one-line-per-interface summary
-ip route                   # routing table — where does traffic go? (default gw)
-ip neigh                   # ARP/neighbor cache — hosts you've recently talked to
+ip route                   # routing table, where does traffic go? (default gw)
+ip neigh                   # ARP/neighbor cache, hosts you've recently talked to
 
 # [Level 0: Fundamental] What is MY machine listening on? (local footprint)
 ss -tuln                   # TCP+UDP listening sockets, numeric ports
@@ -70,7 +70,7 @@ eth0             UP        172.28.0.5/16
 
 ---
 
-## 3. Host discovery — who is alive? `[Level 1: Intermediate]`
+## 3. Host discovery: who is alive? `[Level 1: Intermediate]`
 
 Before port-scanning, find live hosts so you don't waste time on empty IPs.
 
@@ -99,7 +99,7 @@ Nmap done: 256 IP addresses (2 hosts up) scanned in 2.15 seconds
 
 ---
 
-## 4. Port scan types — the core of Nmap
+## 4. Port scan types: the core of Nmap
 
 ### TCP Connect vs SYN Stealth
 
@@ -139,7 +139,7 @@ nmap -sV 172.28.0.10
 # TCP/IP stack quirks. Needs root and at least one open + one closed port.
 sudo nmap -O 172.28.0.10
 
-# Combine the greatest hits: version + OS + default scripts + traceroute
+# Combine common options: version + OS + default scripts + traceroute
 sudo nmap -A 172.28.0.10
 ```
 
@@ -203,7 +203,7 @@ nmap --script "ftp-*" 172.28.0.20          # all FTP scripts (glob) on the FTP b
 
 ## 6. Output formats (and feeding the parser) `[Level 1: Intermediate]`
 
-Always save your scans — for reporting, diffing, and tooling.
+Always save your scans, for reporting, diffing, and tooling.
 
 ```bash
 nmap -sV -oN scan.nmap 172.28.0.10      # -oN: human-readable ("normal")
@@ -220,18 +220,18 @@ nmap -sV -oX - 172.28.0.10 | ../scripts/parse-nmap-xml.py -
 
 ---
 
-## 7. Defensive visibility — how targets see (or don't see) you
+## 7. Defensive visibility: how targets see (or don't see) you
 
 Understanding the defender's view makes you both a better attacker and a better
 blue-teamer.
 
 ### Firewall: DROP vs REJECT
 
-- **DROP** — the firewall silently discards the probe. Nmap gets *no response*
+- **DROP**: the firewall silently discards the probe. Nmap gets *no response*
   and marks the port **filtered**. Scans are slower (Nmap waits for timeouts)
   and you learn less. This is the stealthier defense.
-- **REJECT** — the firewall replies with a TCP RST or ICMP unreachable. Nmap
-  learns the port is **closed/filtered** *immediately* — faster for the
+- **REJECT**: the firewall replies with a TCP RST or ICMP unreachable. Nmap
+  learns the port is **closed/filtered** *immediately*, faster for the
   attacker, but the reply confirms a live host/firewall.
 
 ```text
@@ -242,7 +242,7 @@ iptables -A INPUT -p tcp --dport 22 -j REJECT   # fast RST; confirms presence
 
 ### What trips an IDS/IPS
 
-- **SYN scans without follow-through** (many half-open connections) — a signature
+- **SYN scans without follow-through** (many half-open connections): a signature
   Snort/Suricata rules flag readily.
 - **Fast timing** (`-T4`/`-T5`) and **full-range** (`-p-`) sweeps generate
   volume that rate-based rules catch.
@@ -269,5 +269,5 @@ many ports) sweeps, and prefer DROP to slow attackers down.
 
 ---
 
-➡️ Ready-to-run, scenario-organized commands live in
+ Ready-to-run, scenario-organized commands live in
 **[scan-profiles.md](scan-profiles.md)**.

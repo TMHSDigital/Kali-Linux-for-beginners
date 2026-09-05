@@ -7,7 +7,7 @@ after). They are not interchangeable.
 
 ---
 
-## 1. Capture filters (BPF) — applied before capture
+## 1. Capture filters (BPF): applied before capture
 
 | Use case | Capture filter (BPF) |
 |----------|----------------------|
@@ -28,7 +28,7 @@ CLI usage: `tshark -i docker0 -f "tcp port 80 or tcp port 21" -w out.pcapng`
 
 ---
 
-## 2. Display filters — addressing & transport
+## 2. Display filters: addressing & transport
 
 | Use case | Display filter |
 |----------|----------------|
@@ -48,7 +48,7 @@ CLI usage: `tshark -i docker0 -f "tcp port 80 or tcp port 21" -w out.pcapng`
 
 ---
 
-## 3. Display filters — HTTP
+## 3. Display filters: HTTP
 
 | Use case | Display filter |
 |----------|----------------|
@@ -67,7 +67,7 @@ CLI usage: `tshark -i docker0 -f "tcp port 80 or tcp port 21" -w out.pcapng`
 
 ---
 
-## 4. Display filters — credential & cleartext hunting
+## 4. Display filters: credential & cleartext hunting
 
 | Use case | Display filter |
 |----------|----------------|
@@ -84,7 +84,7 @@ CLI usage: `tshark -i docker0 -f "tcp port 80 or tcp port 21" -w out.pcapng`
 
 ---
 
-## 5. Display filters — DNS
+## 5. Display filters: DNS
 
 | Use case | Display filter |
 |----------|----------------|
@@ -99,7 +99,7 @@ CLI usage: `tshark -i docker0 -f "tcp port 80 or tcp port 21" -w out.pcapng`
 
 ---
 
-## 6. Display filters — TLS / HTTPS (metadata even when encrypted)
+## 6. Display filters: TLS / HTTPS (metadata even when encrypted)
 
 | Use case | Display filter |
 |----------|----------------|
@@ -112,7 +112,7 @@ CLI usage: `tshark -i docker0 -f "tcp port 80 or tcp port 21" -w out.pcapng`
 
 ---
 
-## 7. Display filters — 802.11 / wireless (module 04 captures)
+## 7. Display filters: 802.11 / wireless (module 04 captures)
 
 | Use case | Display filter |
 |----------|----------------|
@@ -163,6 +163,6 @@ CLI usage: `tshark -i docker0 -f "tcp port 80 or tcp port 21" -w out.pcapng`
 ### Colour-coding tip
 
 In the Wireshark GUI, **View → Coloring Rules** lets you flag anything a filter
-can match — e.g. turn every `http.request.method == "POST"` or
+can match, e.g. turn every `http.request.method == "POST"` or
 `ftp.request.command == "PASS"` packet bright red so credentials jump out of a
 busy capture without retyping the filter.

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""parse-nmap-xml.py — Render an Nmap XML report as a clean terminal table.
+"""parse-nmap-xml.py: render an Nmap XML report as a terminal table.
 
 Ingests the XML produced by ``nmap -oX <file>`` (or ``-oX -`` to stdout) and
 prints, per host, a formatted table of open/ open|filtered ports with their
 protocol, state, service name, product, and version.
 
 Standard library only (``xml.etree.ElementTree`` + ``argparse``); no pip
-installs required — it runs anywhere Python 3.7+ is available.
+installs required; it runs anywhere Python 3.7+ is available.
 
 Examples
 --------

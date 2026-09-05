@@ -1,4 +1,4 @@
-# Nmap Scan Profiles — Production-Ready One-Liners
+# Nmap Scan Profiles
 
 Copy-pasteable Nmap invocations organized by **assessment scenario**. Replace
 `$T` with your authorized target (a host, a comma list, or a CIDR range). All
@@ -16,7 +16,7 @@ T="172.28.0.0/24"      # e.g. the lab subnet
 
 ---
 
-## A. Discovery — "what's alive?"
+## A. Discovery: "what's alive?"
 
 ```bash
 # [L1] Fast ping sweep of a subnet (no port scan)
@@ -34,10 +34,10 @@ sudo nmap -sn -PR "$T"
 
 ---
 
-## B. Speed — "quick look, minimal wait"
+## B. Speed: "quick look, minimal wait"
 
 ```bash
-# [L1] Top 100 ports, fast timing — a rapid triage sweep
+# [L1] Top 100 ports, fast timing, a rapid triage sweep
 nmap -F -T4 "$T"                       # -F = top 100 ports
 
 # [L2] Aggressive rate-limited full-TCP where you control the network
@@ -51,13 +51,13 @@ nmap -sV -p "$ports" 172.28.0.10
 
 ---
 
-## C. Thoroughness — "leave nothing unscanned"
+## C. Thoroughness: "leave nothing unscanned"
 
 ```bash
 # [L2] Full TCP port range with version + default scripts + OS + traceroute
 sudo nmap -sS -p- -sV -sC -O --traceroute -T4 -oA full-tcp "$T"
 
-# [L2] Add the top UDP ports (UDP is slow — keep it bounded)
+# [L2] Add the top UDP ports (UDP is slow, keep it bounded)
 sudo nmap -sU --top-ports 50 -sV -T4 -oA full-udp "$T"
 
 # [L2] Everything-and-the-kitchen-sink single host, all output formats
@@ -66,7 +66,7 @@ sudo nmap -A -p- -T4 -oA deep-172-28-0-10 172.28.0.10
 
 ---
 
-## D. Stealth / evasion — "stay quiet" (authorized red-team only)
+## D. Stealth / evasion: "stay quiet" (authorized red-team only)
 
 ```bash
 # [L2] Slow SYN scan, fragmented packets, no ping, decoy timing
@@ -78,7 +78,7 @@ sudo nmap -sS -Pn -D 10.0.0.5,10.0.0.6,ME,10.0.0.7 172.28.0.10
 # [L2] Spoof source port (some firewalls trust 53/80) and randomize host order
 sudo nmap -sS -Pn --source-port 53 --randomize-hosts -T2 "$T"
 
-# [L2] Idle/zombie scan — attribute the scan to a third "zombie" host
+# [L2] Idle/zombie scan, attribute the scan to a third "zombie" host
 sudo nmap -sI <zombie_ip> 172.28.0.10
 ```
 
@@ -87,7 +87,7 @@ sudo nmap -sI <zombie_ip> 172.28.0.10
 
 ---
 
-## E. Service enumeration — "what exactly is running?"
+## E. Service enumeration: "what exactly is running?"
 
 ```bash
 # [L1] Version detection with light intensity (faster, less certain)
@@ -106,13 +106,13 @@ nmap -sV -p 80 --script=http-title,http-headers,http-methods 172.28.0.10
 
 ---
 
-## F. Vulnerability & script scanning — "known issues" (louder, authorized)
+## F. Vulnerability & script scanning: "known issues" (louder, authorized)
 
 ```bash
 # [L2] Safe, non-intrusive checks only
 nmap --script=safe -sV "$T"
 
-# [L2] The vuln category (actively probes for known CVEs — can be disruptive)
+# [L2] The vuln category (actively probes for known CVEs, can be disruptive)
 nmap --script=vuln -sV 172.28.0.10
 
 # [L2] FTP-specific: anonymous login + known vsftpd issues (our lab FTP box)

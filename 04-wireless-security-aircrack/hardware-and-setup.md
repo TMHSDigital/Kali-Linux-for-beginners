@@ -11,7 +11,7 @@ adapter to a Kali VM.
 
 | Chipset | Representative adapters | Bands | Injection | Driver situation |
 |---------|-------------------------|-------|-----------|------------------|
-| **Atheros AR9271** | Alfa AWUS036NHA, TP-Link TL-WN722N **v1** | 2.4 GHz | Excellent | `ath9k_htc` — **in-kernel**, works out of the box. Best beginner choice. |
+| **Atheros AR9271** | Alfa AWUS036NHA, TP-Link TL-WN722N **v1** | 2.4 GHz | Excellent | `ath9k_htc`: **in-kernel**, works out of the box. Best beginner choice. |
 | **Realtek RTL8812AU** | Alfa AWUS036ACH / AWUS036AC | 2.4 + 5 GHz | Good | Out-of-tree `8812au` DKMS driver required |
 | **Realtek RTL8811AU / RTL8821AU** | small dual-band dongles | 2.4 + 5 GHz | Good | Out-of-tree driver required |
 | **Ralink RT3070 / RT5370** | older Alfa models | 2.4 GHz | Good | `rt2800usb` in-kernel |
@@ -80,7 +80,7 @@ dkms status
 
 ## 3. AR9271 (the easy path)
 
-Nothing to install on Kali — `ath9k_htc` is in the mainline kernel. It may need
+Nothing to install on Kali, `ath9k_htc` is in the mainline kernel. It may need
 firmware, which Kali ships:
 
 ```bash
@@ -105,7 +105,7 @@ sudo airmon-ng check kill
 sudo airmon-ng start wlan0            # creates wlan0mon
 iw dev                                # confirm type 'monitor'
 
-# Injection test — REQUIRES a nearby AP to respond; run near your own AP
+# Injection test, REQUIRES a nearby AP to respond; run near your own AP
 sudo aireplay-ng --test wlan0mon
 ```
 
@@ -119,7 +119,7 @@ Found 3 APs
 30/30: 100%
 ```
 
-If injection reports 0% or "no answer", the card can listen but not transmit —
+If injection reports 0% or "no answer", the card can listen but not transmit:
 capture will work but deauth/PMKID attacks won't.
 
 ---
@@ -145,12 +145,12 @@ sudo iw reg set US                            # set to your legal country code
 
 ---
 
-## 6. VirtualBox — USB passthrough
+## 6. VirtualBox: USB passthrough
 
 Monitor mode from a VM works only if the *USB adapter* is passed through
 (virtual NICs can't do RFMON).
 
-1. Install the **VirtualBox Extension Pack** (matching your VBox version) — this
+1. Install the **VirtualBox Extension Pack** (matching your VBox version), this
    provides USB 2.0/3.0 support.
 2. Add your user to the `vboxusers` group so the host lets the VM grab USB:
    ```bash
@@ -168,7 +168,7 @@ it first.
 
 ---
 
-## 7. VMware Workstation / Fusion — USB passthrough
+## 7. VMware Workstation / Fusion: USB passthrough
 
 VMware is generally the smoother option for Realtek AC dongles.
 
@@ -182,11 +182,11 @@ VMware is generally the smoother option for Realtek AC dongles.
 
 > On both hypervisors: if the **host OS** (Windows/macOS) grabs the adapter for
 > its own Wi-Fi, the guest can't use it. Passthrough gives the VM exclusive
-> control — expect to lose that adapter on the host while the VM holds it.
+> control, expect to lose that adapter on the host while the VM holds it.
 
 ---
 
-## 8. WSL2 — the honest limitation
+## 8. WSL2: the honest limitation
 
 WSL2 runs a real Linux kernel but has **no native raw 802.11 access**. Even with
 `usbipd-win` to forward a USB device into WSL2, the WSL2 kernel usually lacks
@@ -194,7 +194,7 @@ the wireless drivers (`ath9k_htc`, `8812au`) and `cfg80211`/`mac80211` monitor
 support, so monitor mode typically fails.
 
 ```powershell
-# On Windows (admin PowerShell) — forward a USB device to WSL2 (best-effort):
+# On Windows (admin PowerShell), forward a USB device to WSL2 (best-effort):
 winget install usbipd
 usbipd list                       # find the BUSID of your adapter
 usbipd bind   --busid <BUSID>
@@ -207,7 +207,7 @@ lsusb                             # may show the device...
 iw list                          # ...but often no 'monitor' mode / no driver
 ```
 
-**Recommendation:** use WSL2 for modules 01–03 and 05 (analyzing saved `.cap`
+**Recommendation:** use WSL2 for modules 01-03 and 05 (analyzing saved `.cap`
 files with `tshark`), and use bare-metal Kali or a full VM with USB passthrough
 for the live wireless work in module 04.
 

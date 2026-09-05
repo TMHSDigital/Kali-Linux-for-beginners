@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# setup-lab-env.sh — Bring up the Kali-for-Beginners practice target lab.
+# setup-lab-env.sh: bring up the Kali-for-Beginners practice target lab.
 #
 # Verifies that Docker and the Compose v2 plugin are present and healthy,
 # validates the isolated bridge network configuration, starts the testbed

@@ -1,8 +1,8 @@
-# 05 — Packet Analysis with Wireshark & tshark `[Level 3: Traffic Forensics]`
+# 05: Packet Analysis with Wireshark & tshark `[Level 3: Traffic Forensics]`
 
 Once you can capture traffic, the skill becomes *reading* it: reconstructing
 what happened on the wire, extracting cleartext secrets from insecure protocols,
-and — crucially — articulating the fix. This module covers the capture engine,
+and, crucially, articulating the fix. This module covers the capture engine,
 the two very different filter languages, the core display filters you'll reach
 for daily, session reassembly, credential extraction, and headless analysis with
 `tshark`. Practice against the bundled Docker lab.
@@ -15,7 +15,7 @@ for daily, session reassembly, credential extraction, and headless analysis with
 
 ## 1. The capture engine (architecture)
 
-Wireshark itself doesn't touch the NIC — a **packet-capture library** does:
+Wireshark itself doesn't touch the NIC, a **packet-capture library** does:
 
 | Platform | Library | Notes |
 |----------|---------|-------|
@@ -24,11 +24,11 @@ Wireshark itself doesn't touch the NIC — a **packet-capture library** does:
 
 Two capture modes to distinguish:
 
-- **Promiscuous mode** — the NIC accepts *all* frames on the wire segment it can
+- **Promiscuous mode**: the NIC accepts *all* frames on the wire segment it can
   see, not just those addressed to it. On a switched network you mostly see your
   own traffic + broadcast/multicast unless the switch is mirroring a port. This
   is for **wired/Ethernet** sniffing.
-- **Monitor mode (RFMON)** — the *wireless* equivalent from module 04: capture
+- **Monitor mode (RFMON)**: the *wireless* equivalent from module 04: capture
   raw 802.11 frames off the air. Different mechanism, different use case.
 
 On Kali, Wireshark needs capture privileges. The clean way:
@@ -42,18 +42,18 @@ groups | grep wireshark                   # confirm membership
 
 ---
 
-## 2. Capture filters (BPF) vs display filters — a critical distinction
+## 2. Capture filters (BPF) vs display filters: a critical distinction
 
 Wireshark has **two entirely different filter languages**, and mixing them up is
 the #1 beginner confusion.
 
-|  | **Capture filter (BPF)** | **Display filter** |
+| | **Capture filter (BPF)** | **Display filter** |
 |--|--------------------------|--------------------|
-| When applied | *Before* capture — decides what hits disk | *After* capture — decides what's shown |
+| When applied | *Before* capture: decides what hits disk | *After* capture: decides what's shown |
 | Language | Berkeley Packet Filter (`tcpdump` syntax) | Wireshark's own expression language |
 | Example | `tcp port 80` | `http.request.method == "POST"` |
-| Can you recover filtered-out packets? | **No** — they were never recorded | **Yes** — clear the filter, they're still there |
-| Memory/disk cost | Low — you only store what matches | High — everything is captured, then hidden |
+| Can you recover filtered-out packets? | **No**: they were never recorded | **Yes**: clear the filter, they're still there |
+| Memory/disk cost | Low: you only store what matches | High: everything is captured, then hidden |
 
 **Rule of thumb:** use a **capture filter** to keep huge/high-rate captures
 manageable (you know in advance you only care about one host/port). Use a
@@ -77,7 +77,7 @@ Display filter examples (note the protocol.field == value syntax):
   ftp || ftp-data
 ```
 
-They are **not interchangeable** — `tcp port 80` is a syntax error in the
+They are **not interchangeable**, `tcp port 80` is a syntax error in the
 display bar; `http.request.method == "POST"` is illegal as a capture filter.
 
 ---
@@ -122,12 +122,12 @@ tcp.stream eq 3                             # everything in TCP stream #3
 # --- Booleans & negation ----------------------------------------------------
 http && ip.addr == 172.28.0.10        # AND (&& or 'and')
 ftp || http                           # OR  (|| or 'or')
-!(arp || dns)                         # NOT — hide noise
+!(arp || dns)                         # NOT, hide noise
 ```
 
 > **`contains` vs `matches`:** `tcp contains "password"` does a literal byte
 > search; `frame matches "pass.*word"` applies a regex. `contains` is faster;
-> `matches` is more powerful.
+> `matches` supports regular expressions.
 
 ---
 
@@ -137,7 +137,7 @@ A single logical conversation (a login, a page load) is spread across many
 packets. Wireshark reassembles them:
 
 - **Right-click a packet → Follow → TCP Stream** (or HTTP/UDP/TLS Stream). This
-  stitches both directions of the conversation into one readable transcript —
+  stitches both directions of the conversation into one readable transcript,
   the fastest way to see a cleartext login or an HTTP request/response pair.
 - The dialog shows client bytes and server bytes in different colors; you can
   switch the "Show as" view to ASCII, Hex Dump, or Raw.
@@ -146,18 +146,18 @@ packets. Wireshark reassembles them:
 
 **Statistics** menu tools that pay off fast:
 
-- **Statistics → Conversations** — every host/port pair, byte counts; find the
+- **Statistics → Conversations**: every host/port pair, byte counts; find the
   loudest talkers.
-- **Statistics → Protocol Hierarchy** — what protocols are present and in what
+- **Statistics → Protocol Hierarchy**: what protocols are present and in what
   proportion.
-- **Statistics → Endpoints** — per-host totals, geolocation.
+- **Statistics → Endpoints**: per-host totals, geolocation.
 
 ---
 
-## 5. Extracting cleartext credentials (the lesson) `[Level 2+: Advanced / Field Ops]`
+## 5. Extracting cleartext credentials `[Level 2+: Advanced / Field Ops]`
 
-The point of these labs is to *viscerally* understand why unencrypted protocols
-are indefensible. Using the Docker lab:
+These labs show why unencrypted protocols expose credentials to anyone who can
+see the traffic. Using the Docker lab:
 
 ### HTTP form POST (web-target, 172.28.0.10)
 
@@ -189,21 +189,20 @@ Response: 230 Login successful.
 
 Telnet transmits **every keystroke** in cleartext, including the password one
 character at a time. `Follow → TCP Stream` on a telnet session reconstructs the
-entire interactive session, credentials included — the historical reason SSH
+entire interactive session, credentials included, the historical reason SSH
 replaced it.
 
 ### Exporting captured objects (files transferred over HTTP)
 
 **File → Export Objects → HTTP** lists every file that crossed the wire over
-HTTP (images, downloads, uploaded documents) and lets you save them to disk —
-data exfiltration made visible.
+HTTP (images, downloads, uploaded documents) and lets you save them to disk.
 
 ---
 
 ## 6. Headless analysis with `tshark` `[Level 2+: Advanced / Field Ops]`
 
 `tshark` is Wireshark's CLI. Essential for servers, scripting, and processing
-capture files without a GUI — and the only realistic option under WSL2.
+capture files without a GUI, and the only realistic option under WSL2.
 
 ```bash
 # List capture interfaces
@@ -266,7 +265,7 @@ Every extraction above has a one-line fix:
   unexpected plaintext protocols, or a NIC entering promiscuous mode
   (`ip link` shows `PROMISC`) is your sensor.
 - Remember: even with TLS, **metadata** (who talks to whom, when, how much)
-  leaks — the Statistics tools above still reveal conversation patterns.
+  leaks, the Statistics tools above still reveal conversation patterns.
 
 ---
 
@@ -284,5 +283,5 @@ Every extraction above has a one-line fix:
 
 ---
 
-➡️ A cross-referenced table of use-cases → exact filters is in
+ A cross-referenced table of use-cases → exact filters is in
 **[filter-cheatsheet.md](filter-cheatsheet.md)**.
