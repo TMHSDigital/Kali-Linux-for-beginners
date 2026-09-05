@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kali Linux for Beginners — Zero to Field-Ready</title>
+  <meta name="description" content="A modular, hands-on Kali Linux &amp; ethical-hacking curriculum: terminal core, privileges, Nmap recon, wireless, and packet analysis.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="assets/styles.css">
+  <!-- Syntax-highlighting theme (both light & dark are toggled in app.js). -->
+  <link id="hljs-theme" rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css">
+</head>
+<body>
+  <a class="skip-link" href="#doc">Skip to content</a>
+
+  <header class="topbar">
+    <button id="menu-toggle" class="icon-btn" aria-label="Toggle navigation" aria-expanded="false">☰</button>
+    <a class="brand" href="#/">
+      <span class="brand-mark">⌘</span>
+      <span class="brand-text">
+        <strong>Kali Linux for Beginners</strong>
+        <em>Zero to Field-Ready</em>
+      </span>
+    </a>
+    <div class="topbar-spacer"></div>
+    <div class="search-wrap">
+      <input id="search" type="search" placeholder="Search docs…  (press /)" autocomplete="off"
+             aria-label="Search documentation">
+      <ul id="search-results" class="search-results" hidden></ul>
+    </div>
+    <button id="theme-toggle" class="icon-btn" aria-label="Toggle light/dark theme">🌙</button>
+    <a id="repo-link" class="icon-btn" href="#" target="_blank" rel="noopener" aria-label="View on GitHub" title="View on GitHub">↗</a>
+  </header>
+
+  <div class="layout">
+    <nav id="sidebar" class="sidebar" aria-label="Documentation navigation">
+      <div id="nav-tree" class="nav-tree"><p class="muted">Loading…</p></div>
+      <p id="nav-meta" class="nav-meta muted"></p>
+    </nav>
+    <div id="scrim" class="scrim" hidden></div>
+
+    <main class="content">
+      <article id="doc" class="markdown">
+        <p class="muted">Loading documentation…</p>
+      </article>
+      <nav class="pager" aria-label="Previous and next document">
+        <a id="prev" class="pager-btn" hidden rel="prev"></a>
+        <a id="next" class="pager-btn" hidden rel="next"></a>
+      </nav>
+      <footer class="doc-footer">
+        <span id="edit-link"></span>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Markdown + syntax highlighting from CDN (no build step needed). -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

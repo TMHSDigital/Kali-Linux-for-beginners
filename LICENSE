@@ -1,0 +1,47 @@
+MIT License
+
+Copyright (c) 2026 TMHSDigital / Kali-Linux-for-beginners contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+-------------------------------------------------------------------------------
+EDUCATIONAL AND AUTHORIZED-TESTING DISCLAIMER
+-------------------------------------------------------------------------------
+
+This repository contains offensive and defensive security material provided
+SOLELY for education and for testing systems that you own or are explicitly
+authorized in writing to assess.
+
+The tools, scripts, commands, and techniques described here can be illegal to
+use against systems, networks, or wireless access points without the express
+permission of their owner. Unauthorized access, interception, deauthentication,
+scanning, or credential cracking may violate laws including but not limited to
+the U.S. Computer Fraud and Abuse Act (CFAA), the U.K. Computer Misuse Act, and
+equivalent legislation in other jurisdictions, as well as local radio-frequency
+regulations.
+
+By using any part of this repository you agree that:
+
+  1. You will only exercise these techniques against infrastructure you own or
+     have documented, authorized permission to test.
+  2. You accept full and sole responsibility for your actions.
+  3. The authors and contributors are not liable for any misuse, damage, or
+     legal consequence arising from the use of this material.
+
+If you do not agree, do not use this repository.

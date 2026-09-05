@@ -1,0 +1,125 @@
+# =============================================================================
+# Kali Linux for Beginners — Isolated Practice Target Lab
+# =============================================================================
+# Spins up deliberately insecure services on a private, static bridge network so
+# you can practice host discovery, port scanning, cleartext-credential
+# interception, and packet analysis SAFELY against targets you own.
+#
+#   web-target   172.28.0.10   HTTP login form (POST creds in cleartext)
+#   ftp-service  172.28.0.20   vsftpd with anonymous + local login (cleartext)
+#
+# Bring up:   docker compose up -d
+# Status:     docker compose ps
+# Tear down:  docker compose down
+#
+# WARNING: These containers are intentionally insecure. Never expose this stack
+# to a public/untrusted network. Only scan the 172.28.0.0/16 range.
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # web-target: nginx serving a plain HTTP login form. Submitting the form POSTs
+  # username/password in cleartext so you can intercept them with Wireshark /
+  # tshark (module 05) and see why HTTP-without-TLS is a credential leak.
+  # ---------------------------------------------------------------------------
+  web-target:
+    image: nginx:alpine
+    container_name: web-target
+    hostname: web-target
+    restart: unless-stopped
+    networks:
+      pentest-lab-net:
+        ipv4_address: 172.28.0.10
+    ports:
+      # Exposed on the host loopback only, so you can browse the form locally.
+      - "127.0.0.1:8080:80"
+    # No bind mounts: the container writes its own demo content on boot, so the
+    # stack is fully self-contained and needs no extra files in the repo.
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        mkdir -p /usr/share/nginx/html
+        if [ ! -f /usr/share/nginx/html/index.html ]; then
+          cat > /usr/share/nginx/html/index.html <<'HTML'
+        <!doctype html>
+        <html lang="en">
+        <head><meta charset="utf-8"><title>Lab Login — INSECURE DEMO</title></head>
+        <body style="font-family:sans-serif;max-width:32rem;margin:4rem auto">
+          <h1>ACME Intranet (Lab Target)</h1>
+          <p style="color:#b00">Plain HTTP — credentials are sent in cleartext on purpose.</p>
+          <form action="/login" method="POST">
+            <p><label>Username <input name="username" value="admin"></label></p>
+            <p><label>Password <input name="password" type="password" value="hunter2"></label></p>
+            <p><button type="submit">Sign in</button></p>
+          </form>
+        </body>
+        </html>
+        HTML
+        fi
+        if [ ! -f /etc/nginx/conf.d/default.conf ]; then
+          cat > /etc/nginx/conf.d/default.conf <<'CONF'
+        server {
+          listen 80;
+          server_name _;
+          root /usr/share/nginx/html;
+          index index.html;
+          # Echo the POSTed credentials back so the request body is obvious on the wire.
+          location = /login {
+            default_type text/html;
+            return 200 '<h1>Received (lab)</h1><p>Your credentials just crossed the network in cleartext. Go find them in Wireshark.</p>';
+          }
+        }
+        CONF
+        fi
+        exec nginx -g 'daemon off;'
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # ftp-service: vsftpd with anonymous access enabled. FTP authentication and
+  # data are unencrypted, so USER/PASS and directory listings are trivially
+  # recoverable from a capture — the classic "why not plain FTP" lesson.
+  # ---------------------------------------------------------------------------
+  ftp-service:
+    image: fauria/vsftpd
+    container_name: ftp-service
+    hostname: ftp-service
+    restart: unless-stopped
+    networks:
+      pentest-lab-net:
+        ipv4_address: 172.28.0.20
+    ports:
+      - "127.0.0.1:2121:21"
+      - "127.0.0.1:21100-21110:21100-21110"
+    environment:
+      # A named local user so you can practice authenticated (still cleartext) login.
+      FTP_USER: "labuser"
+      FTP_PASS: "labpass"
+      PASV_ADDRESS: "127.0.0.1"
+      PASV_MIN_PORT: "21100"
+      PASV_MAX_PORT: "21110"
+      # Enable anonymous login for unauthenticated-capture practice.
+      ANONYMOUS_ONLY: "NO"
+      LOCAL_UMASK: "022"
+    volumes:
+      - ./.lab/ftp:/home/vsftpd
+
+# -----------------------------------------------------------------------------
+# Isolated bridge with a predictable, static subnet so scan targets never move.
+# -----------------------------------------------------------------------------
+networks:
+  pentest-lab-net:
+    name: pentest-lab-net
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
+          gateway: 172.28.0.1
+    driver_opts:
+      com.docker.network.bridge.name: br-pentestlab
