@@ -1,0 +1,31 @@
+{
+  // Zero-install lab: open this repo in GitHub Codespaces (or VS Code Dev
+  // Containers) and the practice lab builds and starts automatically.
+  // Docker runs *inside* the dev container (docker-in-docker), so the lab's
+  // 10.77.0.0/24 bridge is reachable from this terminal directly, and
+  // `./scripts/setup-lab-env.sh shell` drops you onto the Kali attacker box.
+  "name": "Kali Linux for Beginners lab",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/python:1": { "version": "3.13" }
+  },
+  "hostRequirements": { "cpus": 2, "memory": "4gb", "storage": "32gb" },
+
+  // One-time: dev tools + build the lab images (the Kali download happens here).
+  "postCreateCommand": "pip install --user -r requirements-dev.txt && docker compose build",
+  // Every start: bring the lab up and wait for it to be healthy.
+  "postStartCommand": "./scripts/setup-lab-env.sh up",
+
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": { "label": "web-target login form (lab)", "onAutoForward": "notify" },
+    "8099": { "label": "docs site preview", "onAutoForward": "openBrowser" }
+  },
+  "customizations": {
+    "codespaces": { "openFiles": ["01-terminal-and-linux-core/README.md"] },
+    "vscode": {
+      "extensions": ["timonwong.shellcheck", "ms-python.python", "charliermarsh.ruff"]
+    }
+  }
+}

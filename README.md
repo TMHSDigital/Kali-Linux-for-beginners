@@ -1,5 +1,8 @@
 # Kali Linux for Beginners
 
+[![CI](https://github.com/TMHSDigital/Kali-Linux-for-beginners/actions/workflows/ci.yml/badge.svg)](https://github.com/TMHSDigital/Kali-Linux-for-beginners/actions/workflows/ci.yml)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/TMHSDigital/Kali-Linux-for-beginners)
+
 A hands-on Kali Linux and ethical-hacking curriculum that goes from beginner
 shell skills through system administration, network reconnaissance, wireless
 security, and packet analysis. It is based on the concepts in freeCodeCamp's
@@ -47,6 +50,15 @@ repo is mounted read-only at `/lab`, and scans/captures you save in
 targets are also published on `127.0.0.1:8080` (web) and `127.0.0.1:2121` (FTP).
 
 Stop it with `./scripts/setup-lab-env.sh down` (or `docker compose down`).
+
+## Zero-install option: GitHub Codespaces
+
+Click **Open in GitHub Codespaces** above. You get a browser-based VS Code where
+the practice lab builds and starts on its own (the first launch takes a few
+minutes while Kali downloads). Then run `./scripts/setup-lab-env.sh shell` and
+start at module 01. Modules 01-03 and 05 work fully there. Live wireless
+(module 04) needs real hardware. Codespaces is free up to GitHub's monthly
+quota, and it's worth stopping the codespace when you're done.
 
 ## Curriculum
 
