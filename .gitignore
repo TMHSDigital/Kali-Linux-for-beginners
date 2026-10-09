@@ -36,6 +36,7 @@ recon/
 rockyou*
 wordlists/
 !README.txt
+!requirements*.txt
 !**/lab-notes.txt
 
 # ---------------------------------------------------------------------------

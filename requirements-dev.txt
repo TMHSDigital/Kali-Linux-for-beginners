@@ -1,0 +1,4 @@
+# Contributor / CI tooling. The learner-facing scripts need only the Python
+# standard library.
+pytest==9.1.1
+ruff==0.17.0
