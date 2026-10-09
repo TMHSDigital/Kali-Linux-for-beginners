@@ -1,4 +1,5 @@
 # 05: Packet Analysis with Wireshark & tshark `[Level 3: Traffic Forensics]`
+<!-- time: ~3 hours -->
 
 Once you can capture traffic, the skill becomes *reading* it: reconstructing
 what happened on the wire, extracting cleartext secrets from insecure protocols,

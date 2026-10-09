@@ -1,4 +1,6 @@
-# Contributor / CI tooling. The learner-facing scripts need only the Python
-# standard library.
+# Contributor / CI tooling and the docs-site build. The learner-facing
+# scripts (setup-lab-env.sh, parse-nmap-xml.py) need only the standard library.
 pytest==9.1.1
 ruff==0.17.0
+markdown-it-py==4.2.0
+Pygments==2.21.0

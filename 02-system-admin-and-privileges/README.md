@@ -1,4 +1,5 @@
 # 02: System Administration & Privileges `[Level 1: Administration]`
+<!-- time: ~4 hours -->
 
 Privilege determines what every process on a system is allowed to do. Most
 attack chains end in the same place: turning the access you have into more

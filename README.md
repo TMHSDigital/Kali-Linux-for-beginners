@@ -144,13 +144,16 @@ nmap -sV -oX - 10.77.0.10 | parse-nmap-xml.py -     # in the attacker shell (on 
 ## Documentation site
 
 The site at https://tmhsdigital.github.io/Kali-Linux-for-beginners/ renders this
-repository with search, dark and light themes, and section navigation.
+repository with full-text search (it finds commands, not just page titles),
+progress tracking, dark and light themes, printable cheatsheets, and offline
+support after your first visit.
 
-It is generated from the repository. A GitHub Action runs
-[`scripts/build-site.py`](scripts/build-site.py) on every push; the script scans
-the repo, builds the navigation from the directory structure, and reads each
-page's title from its first heading. Adding a module or cheatsheet is enough for
-it to appear; no site edits are needed.
+It's generated from the repository. CI runs
+[`scripts/build-site.py`](scripts/build-site.py) on every push. The script scans
+the repo, builds the navigation from the directory structure, takes each page's
+title from its first heading, and pre-renders every page to static HTML, so each
+document has its own URL, link preview, and search-engine entry. Adding a module
+or cheatsheet is enough for it to appear; no site edits are needed.
 
 <details>
 <summary>Preview the site locally</summary>
@@ -158,9 +161,9 @@ it to appear; no site edits are needed.
 <br>
 
 ```bash
-python scripts/build-site.py --out _site   # generate manifest and copy content
-cd _site && python -m http.server 8099     # fetch() needs http://, not file://
-# open http://127.0.0.1:8099
+pip install -r requirements-dev.txt        # markdown-it-py + Pygments (+ test tools)
+python scripts/build-site.py --out _site
+cd _site && python -m http.server 8099     # open http://127.0.0.1:8099
 ```
 
 To publish, set the repository's Pages source to GitHub Actions

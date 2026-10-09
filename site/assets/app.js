@@ -1,347 +1,224 @@
 /* =========================================================================
-   Kali Linux for Beginners docs single-page app
-   Loads a generated manifest.json, renders Markdown client-side, and builds
-   navigation dynamically. Nothing about the content is hardcoded here.
+   Kali Linux for Beginners: progressive enhancement for the static site.
+   Every page is pre-rendered HTML; this adds the theme toggle, mobile nav,
+   copy buttons, full-text search, and per-browser progress tracking.
+   No innerHTML with untrusted strings: everything is built with DOM APIs.
    ========================================================================= */
 (() => {
   "use strict";
 
-  const state = {
-    manifest: null,
-    flat: [],          // flattened [{title, path, section}] for routing/search
-    current: null,
-  };
-
   const $ = (sel) => document.querySelector(sel);
-  const el = {
-    doc: $("#doc"),
-    navTree: $("#nav-tree"),
-    navMeta: $("#nav-meta"),
-    search: $("#search"),
-    searchResults: $("#search-results"),
-    themeToggle: $("#theme-toggle"),
-    menuToggle: $("#menu-toggle"),
-    sidebar: $("#sidebar"),
-    scrim: $("#scrim"),
-    prev: $("#prev"),
-    next: $("#next"),
-    repoLink: $("#repo-link"),
-    editLink: $("#edit-link"),
-    hljsTheme: $("#hljs-theme"),
+  const ROOT = document.body.dataset.root || "./";
+  const DOC = document.body.dataset.doc || "";
+
+  const store = {
+    get(key, fallback) {
+      try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); }
+      catch (_) { return fallback; }
+    },
+    set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (_) {} },
   };
 
-  const HLJS = {
-    dark: "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css",
-    light: "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css",
+  const el = (tag, props = {}, ...children) => {
+    const node = document.createElement(tag);
+    Object.entries(props).forEach(([k, v]) => {
+      if (k === "class") node.className = v;
+      else if (k === "text") node.textContent = v;
+      else node.setAttribute(k, v);
+    });
+    children.forEach((c) => c && node.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
+    return node;
   };
 
   /* ---------------- Theme ---------------- */
-  function applyTheme(theme) {
-    document.documentElement.setAttribute("data-theme", theme);
-    el.hljsTheme.href = HLJS[theme] || HLJS.dark;
-    try { localStorage.setItem("theme", theme); } catch (_) {}
-  }
-  function initTheme() {
-    let theme = "dark";
-    try {
-      const saved = localStorage.getItem("theme");
-      if (saved) theme = saved;
-      else if (window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches)
-        theme = "light";
-    } catch (_) {}
-    applyTheme(theme);
-  }
-  el.themeToggle.addEventListener("click", () => {
-    const cur = document.documentElement.getAttribute("data-theme");
-    applyTheme(cur === "dark" ? "light" : "dark");
-    if (state.current) highlightAll();
-  });
-
-  /* ---------------- Manifest & nav ---------------- */
-  async function loadManifest() {
-    const res = await fetch("manifest.json", { cache: "no-cache" });
-    if (!res.ok) throw new Error(`manifest.json ${res.status}`);
-    const m = await res.json();
-    state.manifest = m;
-    state.flat = [];
-    m.sections.forEach((sec) =>
-      sec.items.forEach((it) =>
-        state.flat.push({ ...it, section: sec.title, sectionId: sec.id })
-      )
-    );
-
-    if (m.site && m.site.repo) {
-      el.repoLink.href = `https://github.com/${m.site.repo}`;
-    }
-    document.title = m.site.title;
-    renderNav();
-    if (m.site && m.site.generated) {
-      const d = new Date(m.site.generated);
-      el.navMeta.textContent = `${state.flat.length} documents · updated ${d.toLocaleDateString()}`;
-    }
-  }
-
-  function renderNav() {
-    const frag = document.createDocumentFragment();
-    state.manifest.sections.forEach((sec) => {
-      const wrap = document.createElement("div");
-      wrap.className = "nav-section";
-      const h = document.createElement("h3");
-      h.textContent = sec.title;
-      wrap.appendChild(h);
-      const ul = document.createElement("ul");
-      sec.items.forEach((it) => {
-        const li = document.createElement("li");
-        const a = document.createElement("a");
-        a.href = "#/" + it.path;
-        a.textContent = it.title;
-        a.dataset.path = it.path;
-        li.appendChild(a);
-        ul.appendChild(li);
-      });
-      wrap.appendChild(ul);
-      frag.appendChild(wrap);
-    });
-    el.navTree.innerHTML = "";
-    el.navTree.appendChild(frag);
-  }
-
-  function markActiveNav(path) {
-    el.navTree.querySelectorAll("a").forEach((a) =>
-      a.classList.toggle("active", a.dataset.path === path)
-    );
-  }
-
-  /* ---------------- Link rewriting ---------------- */
-  // Resolve a relative link found inside a doc against the doc's own path,
-  // so cross-references (../foo/bar.md, lab-exercises.md, ../scripts/x.py)
-  // route correctly inside the SPA or out to GitHub.
-  function resolvePath(fromPath, href) {
-    const base = fromPath.split("/").slice(0, -1);
-    const parts = href.split("/");
-    for (const p of parts) {
-      if (p === "." || p === "") continue;
-      if (p === "..") base.pop();
-      else base.push(p);
-    }
-    return base.join("/");
-  }
-
-  function rewriteLinks(container, fromPath) {
-    const repo = state.manifest.site && state.manifest.site.repo;
-    container.querySelectorAll("a[href]").forEach((a) => {
-      const raw = a.getAttribute("href");
-      if (!raw) return;
-      if (/^(https?:|mailto:|#)/i.test(raw)) {
-        if (/^https?:/i.test(raw)) { a.target = "_blank"; a.rel = "noopener"; }
-        return;
-      }
-      // Strip any in-page anchor for resolution, re-append after.
-      const [pathPart, anchor] = raw.split("#");
-      let target = resolvePath(fromPath, pathPart || "");
-      // Directory link → its README.
-      if (target && !/\.[a-z0-9]+$/i.test(target)) {
-        target = target.replace(/\/$/, "") + "/README.md";
-      }
-      const known = state.flat.some((f) => f.path === target);
-      if (target.endsWith(".md") && known) {
-        a.setAttribute("href", "#/" + target + (anchor ? "#" + anchor : ""));
-      } else if (repo) {
-        // Non-doc file (script, etc.) → link to it on GitHub.
-        a.setAttribute("href", `https://github.com/${repo}/blob/main/${target}`);
-        a.target = "_blank"; a.rel = "noopener";
-      }
-    });
-  }
-
-  /* ---------------- Rendering ---------------- */
-  function highlightAll() {
-    if (!window.hljs) return;
-    el.doc.querySelectorAll("pre code").forEach((block) => {
-      block.removeAttribute("data-highlighted");
-      try { window.hljs.highlightElement(block); } catch (_) {}
-    });
-  }
-
-  function addCopyButtons() {
-    el.doc.querySelectorAll("pre").forEach((pre) => {
-      if (pre.querySelector(".copy-btn")) return;
-      const btn = document.createElement("button");
-      btn.className = "copy-btn";
-      btn.type = "button";
-      btn.textContent = "Copy";
-      btn.addEventListener("click", async () => {
-        const code = pre.querySelector("code");
-        try {
-          await navigator.clipboard.writeText(code ? code.innerText : pre.innerText);
-          btn.textContent = "Copied!";
-          btn.classList.add("copied");
-          setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 1500);
-        } catch (_) { btn.textContent = "Press ⌘/Ctrl-C"; }
-      });
-      pre.appendChild(btn);
-    });
-  }
-
-  function slugify(text) {
-    return text.toLowerCase().trim()
-      .replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
-  }
-  function addHeadingAnchors() {
-    el.doc.querySelectorAll("h2, h3, h4").forEach((h) => {
-      if (!h.id) h.id = slugify(h.textContent);
-    });
-  }
-
-  async function renderDoc(path) {
-    const known = state.flat.find((f) => f.path === path);
-    if (!known) {
-      el.doc.innerHTML = `<h1>Not found</h1><p class="muted">No document at <code>${path}</code>.</p>`;
-      return;
-    }
-    el.doc.innerHTML = `<p class="muted">Loading.</p>`;
-    let md;
-    try {
-      const res = await fetch("content/" + path, { cache: "no-cache" });
-      if (!res.ok) throw new Error(res.status);
-      md = await res.text();
-    } catch (e) {
-      el.doc.innerHTML = `<h1>Error</h1><p class="muted">Could not load <code>${path}</code> (${e.message}).</p>`;
-      return;
-    }
-
-    window.marked.setOptions({ gfm: true, breaks: false, headerIds: false, mangle: false });
-    el.doc.innerHTML = window.marked.parse(md);
-
-    rewriteLinks(el.doc, path);
-    addHeadingAnchors();
-    addCopyButtons();
-    highlightAll();
-    markActiveNav(path);
-    updatePager(path);
-    updateFooter(path, known);
-    state.current = path;
-
-    // Scroll to anchor or top.
-    const hashAnchor = location.hash.split("#")[2];
-    if (hashAnchor) {
-      const target = document.getElementById(hashAnchor);
-      if (target) target.scrollIntoView();
-      else window.scrollTo(0, 0);
-    } else {
-      window.scrollTo(0, 0);
-    }
-  }
-
-  function updatePager(path) {
-    const i = state.flat.findIndex((f) => f.path === path);
-    const prev = state.flat[i - 1];
-    const next = state.flat[i + 1];
-    if (prev) {
-      el.prev.hidden = false;
-      el.prev.href = "#/" + prev.path;
-      el.prev.innerHTML = `<small>← Previous</small><span>${prev.title}</span>`;
-    } else { el.prev.hidden = true; }
-    if (next) {
-      el.next.hidden = false;
-      el.next.href = "#/" + next.path;
-      el.next.innerHTML = `<small>Next →</small><span>${next.title}</span>`;
-    } else { el.next.hidden = true; }
-  }
-
-  function updateFooter(path, known) {
-    const repo = state.manifest.site && state.manifest.site.repo;
-    if (repo) {
-      el.editLink.innerHTML =
-        `<a href="https://github.com/${repo}/blob/main/${path}" target="_blank" rel="noopener">Edit this page on GitHub ↗</a>`;
-    }
-  }
-
-  /* ---------------- Search ---------------- */
-  function runSearch(q) {
-    q = q.trim().toLowerCase();
-    if (!q) { el.searchResults.hidden = true; el.searchResults.innerHTML = ""; return; }
-    const matches = state.flat
-      .map((f) => {
-        const hay = (f.title + " " + f.section + " " + f.path).toLowerCase();
-        const idx = hay.indexOf(q);
-        return idx === -1 ? null : { f, score: idx };
-      })
-      .filter(Boolean)
-      .sort((a, b) => a.score - b.score)
-      .slice(0, 12);
-
-    if (!matches.length) {
-      el.searchResults.innerHTML = `<li><a class="muted">No matches</a></li>`;
-      el.searchResults.hidden = false;
-      return;
-    }
-    el.searchResults.innerHTML = matches
-      .map(({ f }) =>
-        `<li><a href="#/${f.path}">${f.title}<small>${f.section}</small></a></li>`
-      ).join("");
-    el.searchResults.hidden = false;
-  }
-
-  el.search.addEventListener("input", (e) => runSearch(e.target.value));
-  el.search.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { el.search.value = ""; runSearch(""); el.search.blur(); }
-    if (e.key === "Enter") {
-      const first = el.searchResults.querySelector("a[href]");
-      if (first) { location.hash = first.getAttribute("href"); closeSearch(); }
-    }
-  });
-  function closeSearch() { el.searchResults.hidden = true; el.search.value = ""; }
-  document.addEventListener("click", (e) => {
-    if (!e.target.closest(".search-wrap")) el.searchResults.hidden = true;
-  });
-  // "/" focuses search from anywhere.
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "/" && document.activeElement !== el.search) {
-      e.preventDefault(); el.search.focus();
-    }
+  $("#theme-toggle").addEventListener("click", () => {
+    const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("theme", next); } catch (_) {}
   });
 
   /* ---------------- Mobile nav ---------------- */
+  const sidebar = $("#sidebar"), scrim = $("#scrim"), menuToggle = $("#menu-toggle");
   function toggleSidebar(open) {
-    const show = open ?? !el.sidebar.classList.contains("open");
-    el.sidebar.classList.toggle("open", show);
-    el.scrim.hidden = !show;
-    el.menuToggle.setAttribute("aria-expanded", String(show));
+    const show = open ?? !sidebar.classList.contains("open");
+    sidebar.classList.toggle("open", show);
+    scrim.hidden = !show;
+    menuToggle.setAttribute("aria-expanded", String(show));
   }
-  el.menuToggle.addEventListener("click", () => toggleSidebar());
-  el.scrim.addEventListener("click", () => toggleSidebar(false));
-  el.navTree.addEventListener("click", (e) => {
-    if (e.target.closest("a")) toggleSidebar(false);
+  menuToggle.addEventListener("click", () => toggleSidebar());
+  scrim.addEventListener("click", () => toggleSidebar(false));
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && sidebar.classList.contains("open")) toggleSidebar(false);
   });
 
-  /* ---------------- Router ---------------- */
-  function currentRoute() {
-    const h = location.hash.replace(/^#\/?/, "");
-    return h.split("#")[0] || null;
-  }
-  function route() {
-    const path = currentRoute();
-    if (!path) {
-      // Default to the first document (Home / root README).
-      const first = state.flat[0];
-      if (first) { location.replace("#/" + first.path); return; }
-    }
-    renderDoc(path);
-    el.searchResults.hidden = true;
-  }
-  window.addEventListener("hashchange", route);
+  /* ---------------- Copy buttons ---------------- */
+  document.querySelectorAll(".markdown pre").forEach((pre) => {
+    const btn = el("button", { class: "copy-btn", type: "button", text: "Copy",
+                               "aria-label": "Copy code to clipboard" });
+    btn.addEventListener("click", async () => {
+      const code = pre.querySelector("code");
+      try {
+        await navigator.clipboard.writeText((code || pre).innerText);
+        btn.textContent = "Copied!";
+        btn.classList.add("copied");
+        setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 1500);
+      } catch (_) { btn.textContent = "Press Ctrl-C"; }
+    });
+    pre.appendChild(btn);
+  });
 
-  /* ---------------- Boot ---------------- */
-  async function boot() {
-    initTheme();
-    try {
-      await loadManifest();
-      route();
-    } catch (e) {
-      el.doc.innerHTML =
-        `<h1>Failed to load</h1><p class="muted">${e.message}. If you opened this file directly, serve it over HTTP (e.g. <code>python -m http.server</code>); browsers block <code>fetch()</code> on <code>file://</code>.</p>`;
+  /* ---------------- Progress tracking ---------------- */
+  const navLinks = [...document.querySelectorAll(".nav-tree a[data-doc]")];
+  const allDocs = navLinks.map((a) => a.dataset.doc);
+  function renderProgress() {
+    const done = new Set(store.get("done", []));
+    navLinks.forEach((a) => a.classList.toggle("done", done.has(a.dataset.doc)));
+    document.querySelectorAll(".card[data-section]").forEach((card) => {
+      const links = [...card.querySelectorAll("a[href]")].map((a) => a.getAttribute("href"));
+      card.classList.toggle("done", links.length > 0 && links.every((h) => done.has(h)));
+    });
+    const count = allDocs.filter((d) => done.has(d)).length;
+    const wrap = $(".progress-wrap");
+    if (wrap) {
+      wrap.hidden = count === 0;
+      $("#progress-text").textContent = `${count} of ${allDocs.length} complete`;
+      $("#progress-fill").style.width = `${Math.round((100 * count) / Math.max(allDocs.length, 1))}%`;
+    }
+    const btn = $("#mark-done");
+    if (btn) {
+      const isDone = done.has(DOC);
+      btn.setAttribute("aria-pressed", String(isDone));
+      btn.textContent = isDone ? "Completed ✓ (undo)" : "Mark as complete";
     }
   }
-  boot();
+  const markBtn = $("#mark-done");
+  if (markBtn && DOC) {
+    markBtn.addEventListener("click", () => {
+      const done = new Set(store.get("done", []));
+      if (done.has(DOC)) done.delete(DOC); else done.add(DOC);
+      store.set("done", [...done]);
+      renderProgress();
+    });
+  }
+  renderProgress();
+
+  /* ---------------- Full-text search (WAI-ARIA combobox) ---------------- */
+  const input = $("#search"), list = $("#search-results"), status = $("#search-status");
+  let index = null, loading = null, results = [], active = -1;
+
+  function loadIndex() {
+    if (index) return Promise.resolve(index);
+    if (!loading) {
+      loading = fetch(ROOT + "search-index.json")
+        .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then((data) => {
+          index = data.map((d) => ({ ...d, lower: d.text.toLowerCase(),
+                                     titleLower: d.title.toLowerCase() }));
+          return index;
+        })
+        .catch(() => { loading = null; return []; });
+    }
+    return loading;
+  }
+
+  function snippet(text, lower, term) {
+    const i = lower.indexOf(term);
+    if (i < 0) return { before: text.slice(0, 120), match: "", after: "" };
+    const start = Math.max(0, i - 50);
+    return {
+      before: (start > 0 ? "…" : "") + text.slice(start, i),
+      match: text.slice(i, i + term.length),
+      after: text.slice(i + term.length, i + term.length + 70) + "…",
+    };
+  }
+
+  function search(q) {
+    const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+    if (!terms.length || !index) return [];
+    return index
+      .map((d) => {
+        let score = 0;
+        for (const t of terms) {
+          const inTitle = d.titleLower.includes(t);
+          const heading = d.headings.find((h) => h.text.toLowerCase().includes(t));
+          const count = d.lower.split(t).length - 1;
+          if (!inTitle && !heading && !count) return null;
+          score += (inTitle ? 50 : 0) + (heading ? 20 : 0) + Math.min(count, 10);
+        }
+        const heading = d.headings.find((h) => h.text.toLowerCase().includes(terms[0]));
+        return { d, score, heading, snip: snippet(d.text, d.lower, terms[0]) };
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
+  }
+
+  function hrefFor(r) {
+    return ROOT + r.d.url + (r.heading ? "#" + r.heading.id : "");
+  }
+
+  function setActive(i) {
+    const items = [...list.querySelectorAll("[role=option]")];
+    items.forEach((it, n) => it.setAttribute("aria-selected", String(n === i)));
+    active = i;
+    if (items[i]) {
+      input.setAttribute("aria-activedescendant", items[i].id);
+      items[i].scrollIntoView({ block: "nearest" });
+    } else {
+      input.removeAttribute("aria-activedescendant");
+    }
+  }
+
+  function close() {
+    list.hidden = true;
+    input.setAttribute("aria-expanded", "false");
+    input.removeAttribute("aria-activedescendant");
+    active = -1;
+  }
+
+  function render(q) {
+    list.replaceChildren();
+    if (!q.trim()) { close(); status.textContent = ""; return; }
+    results = search(q);
+    if (!results.length) {
+      list.appendChild(el("li", { class: "search-empty", role: "presentation", text: "No matches" }));
+    }
+    results.forEach((r, i) => {
+      const a = el("a", { href: hrefFor(r), tabindex: "-1" },
+        el("span", { class: "sr-title", text: r.d.title }),
+        el("small", { text: r.heading ? `${r.d.section} › ${r.heading.text}` : r.d.section }),
+        el("span", { class: "sr-snippet" }, r.snip.before,
+           r.snip.match ? el("mark", { text: r.snip.match }) : null, r.snip.after));
+      list.appendChild(el("li", { id: `sr-${i}`, role: "option", "aria-selected": "false" }, a));
+    });
+    list.hidden = false;
+    input.setAttribute("aria-expanded", "true");
+    status.textContent = results.length ? `${results.length} results` : "No results";
+    setActive(-1);
+  }
+
+  input.addEventListener("focus", loadIndex, { once: true });
+  input.addEventListener("input", () => loadIndex().then(() => render(input.value)));
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" && results.length) {
+      e.preventDefault(); setActive(Math.min(active + 1, results.length - 1));
+    } else if (e.key === "ArrowUp" && results.length) {
+      e.preventDefault(); setActive(Math.max(active - 1, 0));
+    } else if (e.key === "Enter") {
+      const r = results[active >= 0 ? active : 0];
+      if (r) { e.preventDefault(); location.href = hrefFor(r); }
+    } else if (e.key === "Escape") {
+      input.value = ""; render(""); input.blur();
+    }
+  });
+  document.addEventListener("click", (e) => { if (!e.target.closest(".search-wrap")) close(); });
+  document.addEventListener("keydown", (e) => {
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    if (e.key === "/" && !typing) { e.preventDefault(); input.focus(); }
+  });
+
+  /* ---------------- Offline support ---------------- */
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    navigator.serviceWorker.register(ROOT + "sw.js").catch(() => {});
+  }
 })();

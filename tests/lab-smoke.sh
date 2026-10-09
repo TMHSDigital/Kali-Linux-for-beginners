@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016  # single-quoted strings are commands run inside the attacker container
 # =============================================================================
 # lab-smoke.sh: prove the practice lab does what the curriculum says it does.
 #

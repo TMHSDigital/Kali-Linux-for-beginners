@@ -1,4 +1,5 @@
 # 03: Network Recon & Nmap `[Level 2: Reconnaissance]`
+<!-- time: ~4 hours -->
 
 Reconnaissance answers three questions before any exploitation: *what hosts are
 alive, what services do they run, and what versions are those services?* Nmap is
