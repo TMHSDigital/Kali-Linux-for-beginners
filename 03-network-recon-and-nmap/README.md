@@ -91,8 +91,9 @@ nmap -sn 10.77.0.10 10.77.0.20     # specific hosts
 # are firewalled and -sn wrongly reports hosts as down.
 nmap -Pn 10.77.0.10
 
-# List targets WITHOUT sending packets (-sL): sanity-check your target spec
-nmap -sL 10.77.0.0/28
+# List targets without probing them (-sL): sanity-check your target spec.
+# Add -n: otherwise Nmap still sends a reverse-DNS query for every address.
+nmap -sL -n 10.77.0.0/28
 ```
 
 Expected `-sn` output:

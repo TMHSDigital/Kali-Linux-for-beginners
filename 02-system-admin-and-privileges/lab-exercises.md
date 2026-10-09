@@ -160,20 +160,28 @@ SUID-root, an attacker could leverage it to become root. Look each one up on
 misconfiguration is fatal. We make a harmless copy of `bash` SUID-root, show it
 grants a root shell, then remove it immediately.
 
+> **Only on your own Kali VM, never on a shared or production machine.** For
+> the few minutes it exists, *any* local user can become root with it.
+>
+> We use `/opt` rather than `/tmp` because many systems mount `/tmp` with the
+> `nosuid` option, which makes the kernel silently ignore the SUID bit (check
+> with `findmnt -no OPTIONS /tmp`). That's also a real defense worth knowing:
+> mounting world-writable directories `nosuid` kills this whole technique.
+
 ```bash
 # Setup (as root): create a deliberately-vulnerable SUID bash copy
-sudo cp /bin/bash /tmp/rootbash
-sudo chmod 4755 /tmp/rootbash            # SUID + rwxr-xr-x
-ls -l /tmp/rootbash                       # note the 's' in -rwsr-xr-x
+sudo cp /bin/bash /opt/rootbash
+sudo chmod 4755 /opt/rootbash            # SUID + rwxr-xr-x
+ls -l /opt/rootbash                       # note the 's' in -rwsr-xr-x
 
 # Exploit (as a NORMAL user): -p preserves the elevated privileges
-/tmp/rootbash -p -c 'id'                  # prints uid=1000 ... euid=0(root)!
+/opt/rootbash -p -c 'id'                  # prints uid=1000 ... euid=0(root)!
 ```
 
 Expected:
 
 ```text
-uid=1000(kali) gid=1000(kali) euid=0(root) egid=0(root) groups=...
+uid=1000(kali) gid=1000(kali) euid=0(root) groups=1000(kali),...
 ```
 
 The **euid=0(root)** proves you executed code as root from an unprivileged
@@ -182,15 +190,15 @@ account, exactly what an attacker wants.
 **Self-grade:**
 
 ```bash
-/tmp/rootbash -p -c 'id -u' 2>/dev/null | grep -q '^0$' \
+/opt/rootbash -p -c 'id -u' 2>/dev/null | grep -q '^0$' \
   && echo "PASS: SUID bash yielded euid 0, lesson learned" \
   || echo "FAIL: setup didn't take (check chmod 4755)"
 ```
 
-** Clean up this landmine immediately:**
+**Clean up this landmine immediately:**
 
 ```bash
-sudo rm -f /tmp/rootbash
+sudo rm -f /opt/rootbash
 echo "Removed the SUID bash. Never leave one of these on a real system."
 ```
 
@@ -262,7 +270,7 @@ systemctl is-active ssh 2>/dev/null | grep -q "active" \
 sudo userdel -r analyst 2>/dev/null
 sudo groupdel pentesters 2>/dev/null
 sudo rm -f /tmp/key.pem /tmp/public.txt /tmp/deploy.sh /tmp/shared-report.txt \
-           /tmp/rootbash /tmp/suid.list
+           /opt/rootbash /tmp/suid.list
 echo "Lab 02 artifacts removed."
 ```
 

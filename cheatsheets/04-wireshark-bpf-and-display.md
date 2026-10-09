@@ -115,9 +115,9 @@ them.
 | `&&` | `and` | `http && ip.addr==X` |
 | `\|\|` | `or` | `ftp \|\| http` |
 | `!` | `not` | `!arp` |
-| `contains` |: | `tcp contains "PASS"` |
+| `contains` | n/a | `tcp contains "PASS"` |
 | `matches` | `~` | `frame matches "pass"` |
-| `in` |: | `tcp.port in {80 443}` |
+| `in` | n/a | `tcp.port in {80 443}` |
 
 ## tshark essentials
 

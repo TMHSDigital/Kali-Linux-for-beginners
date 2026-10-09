@@ -16,7 +16,7 @@ or OS/packet-level features needs `sudo`. Scan only authorized targets.
 | `192.168.1.*` | Wildcard octet |
 | `-iL targets.txt` | Read targets from file |
 | `--exclude 192.168.1.1` | Omit host(s) |
-| `-sL` | List targets only (no packets sent) |
+| `-sL -n` | List targets only (no probes; `-n` also skips reverse DNS) |
 
 ## Host discovery
 
