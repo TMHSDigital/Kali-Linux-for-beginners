@@ -3,7 +3,8 @@
 
 Ingests the XML produced by ``nmap -oX <file>`` (or ``-oX -`` to stdout) and
 prints, per host, a formatted table of open/ open|filtered ports with their
-protocol, state, service name, product, and version.
+protocol, state, service name, product, and version. ``--format`` switches the
+output to Markdown (paste straight into a report), CSV, or JSON.
 
 Standard library only (``xml.etree.ElementTree`` + ``argparse``); no pip
 installs required; it runs anywhere Python 3.7+ is available.
@@ -14,10 +15,13 @@ Examples
     ./scripts/parse-nmap-xml.py scan.xml
     nmap -sV -oX - 10.77.0.10 | ./scripts/parse-nmap-xml.py -
     ./scripts/parse-nmap-xml.py scan.xml --all-states --no-color
+    ./scripts/parse-nmap-xml.py scan.xml --format markdown >> findings.md
 """
 from __future__ import annotations
 
 import argparse
+import csv
+import json
 import sys
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -92,22 +96,18 @@ def parse_hosts(root: ET.Element, keep_all_states: bool) -> List[Host]:
     for host_el in root.findall("host"):
         status = _text(host_el.find("status"), "state", "unknown")
 
-        # Prefer the IPv4 address; fall back to IPv6 or MAC.
-        address = ""
+        # Prefer IPv4, then IPv6, then MAC, regardless of element order.
+        by_type = {}
         for addr_el in host_el.findall("address"):
-            addr_type = addr_el.get("addrtype", "")
-            if addr_type == "ipv4":
-                address = addr_el.get("addr", "")
-                break
-            if not address:  # remember first non-ipv4 as a fallback
-                address = addr_el.get("addr", "")
+            by_type.setdefault(addr_el.get("addrtype", ""), addr_el.get("addr", ""))
+        address = next(
+            (by_type[t] for t in ("ipv4", "ipv6", "mac") if by_type.get(t)),
+            next(iter(by_type.values()), ""),
+        )
 
-        # Hostname, if resolved.
-        hostname = ""
-        hostnames_el = host_el.find("hostnames")
-        if hostnames_el is not None:
-            hn = hostnames_el.find("hostname")
-            hostname = _text(hn, "name", "")
+        # Every resolved hostname (PTR, user-supplied, ...), comma-separated.
+        names = [hn.get("name", "") for hn in host_el.findall("hostnames/hostname")]
+        hostname = ", ".join(n for n in names if n)
 
         ports: List[Port] = []
         ports_el = host_el.find("ports")
@@ -191,7 +191,7 @@ def render(hosts: List[Host], pal: Palette, out: TextIO) -> None:
         print("  " + "  ".join("-" * widths[i] for i in range(len(headers))),
               file=out)
 
-        for p, r in zip(host.ports, rows):
+        for r in rows:
             cells = [
                 r[0].ljust(widths[0]),
                 r[1].ljust(widths[1]),
@@ -200,6 +200,63 @@ def render(hosts: List[Host], pal: Palette, out: TextIO) -> None:
                 r[4].ljust(widths[4]),
             ]
             print("  " + "  ".join(cells), file=out)
+        print("", file=out)
+
+
+def _flat_rows(hosts: List[Host]) -> List[dict]:
+    """One dict per (host, port), the shape shared by CSV and JSON output."""
+    return [
+        {
+            "address": h.address, "hostname": h.hostname, "status": h.status,
+            "port": p.portid, "protocol": p.protocol, "state": p.state,
+            "service": p.service, "product": p.product, "version": p.version,
+        }
+        for h in hosts for p in h.ports
+    ]
+
+
+def render_json(hosts: List[Host], out: TextIO) -> None:
+    doc = [
+        {
+            "address": h.address, "hostname": h.hostname, "status": h.status,
+            "ports": [
+                {"port": p.portid, "protocol": p.protocol, "state": p.state,
+                 "service": p.service, "product": p.product, "version": p.version}
+                for p in h.ports
+            ],
+        }
+        for h in hosts
+    ]
+    json.dump(doc, out, indent=2)
+    out.write("\n")
+
+
+def render_csv(hosts: List[Host], out: TextIO) -> None:
+    fields = ["address", "hostname", "status", "port", "protocol", "state",
+              "service", "product", "version"]
+    writer = csv.DictWriter(out, fieldnames=fields, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(_flat_rows(hosts))
+
+
+def render_markdown(hosts: List[Host], out: TextIO) -> None:
+    """A Markdown table per host, ready to paste into a findings report."""
+    def cell(s: str) -> str:
+        return s.replace("|", "\\|")
+
+    for host in hosts:
+        label = host.address or "(unknown address)"
+        if host.hostname:
+            label += f" ({host.hostname})"
+        print(f"### {cell(label)} ({host.status})\n", file=out)
+        if not host.ports:
+            print("_No open/filtered ports reported._\n", file=out)
+            continue
+        print("| Port | Proto | State | Service | Product / Version |", file=out)
+        print("|------|-------|-------|---------|-------------------|", file=out)
+        for p in host.ports:
+            print(f"| {p.portid} | {p.protocol} | {cell(p.state)} | "
+                  f"{cell(p.service)} | {cell(p.version_str)} |", file=out)
         print("", file=out)
 
 
@@ -224,6 +281,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-color",
         action="store_true",
         help="Disable ANSI colour output.",
+    )
+    parser.add_argument(
+        "--format",
+        choices=("table", "markdown", "csv", "json"),
+        default="table",
+        help="Output format (default: table).",
     )
     return parser
 
@@ -252,8 +315,15 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     hosts = parse_hosts(root, keep_all_states=args.all_states)
 
-    color_enabled = (not args.no_color) and sys.stdout.isatty()
-    render(hosts, Palette(color_enabled), sys.stdout)
+    if args.format == "json":
+        render_json(hosts, sys.stdout)
+    elif args.format == "csv":
+        render_csv(hosts, sys.stdout)
+    elif args.format == "markdown":
+        render_markdown(hosts, sys.stdout)
+    else:
+        color_enabled = (not args.no_color) and sys.stdout.isatty()
+        render(hosts, Palette(color_enabled), sys.stdout)
     return 0
 
 

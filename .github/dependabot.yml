@@ -1,0 +1,29 @@
+# Keep pinned versions (by digest/SHA) current without letting them float.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # nginx image pinned in docker-compose.yml
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+
+  # Base images of the lab's own Dockerfiles
+  - package-ecosystem: docker
+    directories:
+      - /lab/attacker
+      - /lab/ftp-service
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly

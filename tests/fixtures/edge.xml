@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hand-written edge cases for parse-nmap-xml.py tests. -->
+<nmaprun scanner="nmap" args="nmap -sS -sU -sV -oX edge.xml ...">
+  <!-- MAC listed before IPv6: the IPv6 address should still win. -->
+  <host>
+    <status state="up"/>
+    <address addr="aa:bb:cc:dd:ee:ff" addrtype="mac"/>
+    <address addr="fd00::10" addrtype="ipv6"/>
+    <hostnames>
+      <hostname name="v6-host.lab" type="PTR"/>
+      <hostname name="alias.lab" type="user"/>
+    </hostnames>
+    <ports>
+      <port protocol="udp" portid="53"><state state="open|filtered"/><service name="domain"/></port>
+      <port protocol="tcp" portid="443"><state state="open"/><service name="https" product="nginx" version="1.30.5"/></port>
+      <port protocol="tcp" portid="22"><state state="closed"/><service name="ssh"/></port>
+      <port protocol="tcp" portid="8080"><state state="filtered"/><service name="http-proxy"/></port>
+    </ports>
+  </host>
+  <!-- Down host with no <ports> element at all. -->
+  <host>
+    <status state="down"/>
+    <address addr="10.77.0.99" addrtype="ipv4"/>
+  </host>
+  <!-- Up host with only closed ports. -->
+  <host>
+    <status state="up"/>
+    <address addr="10.77.0.30" addrtype="ipv4"/>
+    <ports>
+      <port protocol="tcp" portid="25"><state state="closed"/><service name="smtp"/></port>
+    </ports>
+  </host>
+</nmaprun>

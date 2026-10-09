@@ -19,9 +19,14 @@
 # the port bindings to 0.0.0.0 and only scan the 10.77.0.0/24 range.
 # =============================================================================
 
+# Defensive hardening for the targets: they're meant to be insecure on the
+# wire, not to hand out extra kernel privileges. Drop every capability, then
+# add back only what each daemon needs to bind port 21/80 and drop to its
+# worker user.
 x-hardening: &hardening
   security_opt:
     - no-new-privileges:true
+  cap_drop: [ALL]
 
 services:
   # ---------------------------------------------------------------------------
@@ -55,6 +60,7 @@ services:
     container_name: web-target
     hostname: web-target
     restart: unless-stopped
+    cap_add: [CHOWN, SETUID, SETGID, NET_BIND_SERVICE]
     networks:
       pentest-lab-net:
         ipv4_address: 10.77.0.10
@@ -83,6 +89,7 @@ services:
     container_name: ftp-service
     hostname: ftp-service
     restart: unless-stopped
+    cap_add: [CHOWN, FOWNER, SETUID, SETGID, NET_BIND_SERVICE, SYS_CHROOT, DAC_OVERRIDE]
     networks:
       pentest-lab-net:
         ipv4_address: 10.77.0.20
