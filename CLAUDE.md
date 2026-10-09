@@ -1,62 +1,33 @@
-# context-mode — MANDATORY routing rules
+# Kali Linux for Beginners: notes for AI assistants and contributors
 
-You have context-mode MCP tools available. These rules are NOT optional — they protect your context window from flooding. A single unrouted command can dump 56 KB into context and waste the entire session.
+A beginner ethical-hacking curriculum (Markdown modules + cheatsheets), a Docker
+practice lab, two small Python tools, and a static docs site generated from the
+Markdown. See CONTRIBUTING.md for the full guide; the essentials:
 
-## BLOCKED commands — do NOT attempt these
+## Layout
+- `NN-topic/README.md` is a module; other `.md` files in that folder are its
+  sub-pages. `cheatsheets/` is quick reference. All of it becomes the site.
+- `docker-compose.yml` + `lab/`: attacker (Kali, 10.77.0.5), web-target
+  (10.77.0.10), ftp-service (10.77.0.20) on `10.77.0.0/24`.
+- `scripts/setup-lab-env.sh` (lab launcher), `scripts/parse-nmap-xml.py`
+  (stdlib only), `scripts/build-site.py` (markdown-it-py + Pygments).
+- `tests/`: pytest for the Python scripts, `tests/lab-smoke.sh` for the lab.
 
-### curl / wget — BLOCKED
-Any Bash command containing `curl` or `wget` is intercepted and replaced with an error message. Do NOT retry.
-Instead use:
-- `ctx_fetch_and_index(url, source)` to fetch and index web pages
-- `ctx_execute(language: "javascript", code: "const r = await fetch(...)")` to run HTTP calls in sandbox
+## Content rules
+- Tag commands by depth: `[Level 0: Fundamental]`, `[Level 1: Intermediate]`,
+  `[Level 2+: Advanced / Field Ops]`. Module H1 ends with a level tag; add
+  `<!-- time: ~N hours -->` on the line after it.
+- Every technique gets the command, its expected output, and a defensive note.
+- Examples only target the lab (`10.77.0.0/24`), `127.0.0.1`, or documentation
+  ranges. Never real third-party hosts. Keep authorization warnings.
+- Plain ASCII punctuation (no em dashes). Run commands against the lab before
+  documenting them and paste real output.
 
-### Inline HTTP — BLOCKED
-Any Bash command containing `fetch('http`, `requests.get(`, `requests.post(`, `http.get(`, or `http.request(` is intercepted and replaced with an error message. Do NOT retry with Bash.
-Instead use:
-- `ctx_execute(language, code)` to run HTTP calls in sandbox — only stdout enters context
-
-### WebFetch — BLOCKED
-WebFetch calls are denied entirely. The URL is extracted and you are told to use `ctx_fetch_and_index` instead.
-Instead use:
-- `ctx_fetch_and_index(url, source)` then `ctx_search(queries)` to query the indexed content
-
-## REDIRECTED tools — use sandbox equivalents
-
-### Bash (>20 lines output)
-Bash is ONLY for: `git`, `mkdir`, `rm`, `mv`, `cd`, `ls`, `npm install`, `pip install`, and other short-output commands.
-For everything else, use:
-- `ctx_batch_execute(commands, queries)` — run multiple commands + search in ONE call
-- `ctx_execute(language: "shell", code: "...")` — run in sandbox, only stdout enters context
-
-### Read (for analysis)
-If you are reading a file to **Edit** it → Read is correct (Edit needs content in context).
-If you are reading to **analyze, explore, or summarize** → use `ctx_execute_file(path, language, code)` instead. Only your printed summary enters context. The raw file content stays in the sandbox.
-
-### Grep (large results)
-Grep results can flood context. Use `ctx_execute(language: "shell", code: "grep ...")` to run searches in sandbox. Only your printed summary enters context.
-
-## Tool selection hierarchy
-
-1. **GATHER**: `ctx_batch_execute(commands, queries)` — Primary tool. Runs all commands, auto-indexes output, returns search results. ONE call replaces 30+ individual calls.
-2. **FOLLOW-UP**: `ctx_search(queries: ["q1", "q2", ...])` — Query indexed content. Pass ALL questions as array in ONE call.
-3. **PROCESSING**: `ctx_execute(language, code)` | `ctx_execute_file(path, language, code)` — Sandbox execution. Only stdout enters context.
-4. **WEB**: `ctx_fetch_and_index(url, source)` then `ctx_search(queries)` — Fetch, chunk, index, query. Raw HTML never enters context.
-5. **INDEX**: `ctx_index(content, source)` — Store content in FTS5 knowledge base for later search.
-
-## Subagent routing
-
-When spawning subagents (Agent/Task tool), the routing block is automatically injected into their prompt. Bash-type subagents are upgraded to general-purpose so they have access to MCP tools. You do NOT need to manually instruct subagents about context-mode.
-
-## Output constraints
-
-- Keep responses under 500 words.
-- Write artifacts (code, configs, PRDs) to FILES — never return them as inline text. Return only: file path + 1-line description.
-- When indexing content, use descriptive source labels so others can `ctx_search(source: "label")` later.
-
-## ctx commands
-
-| Command | Action |
-|---------|--------|
-| `ctx stats` | Call the `ctx_stats` MCP tool and display the full output verbatim |
-| `ctx doctor` | Call the `ctx_doctor` MCP tool, run the returned shell command, display as checklist |
-| `ctx upgrade` | Call the `ctx_upgrade` MCP tool, run the returned shell command, display as checklist |
+## Checks before committing
+```bash
+pip install -r requirements-dev.txt
+ruff check scripts tests && pytest -q
+./scripts/setup-lab-env.sh && bash tests/lab-smoke.sh   # if you touched the lab or lab docs
+python scripts/build-site.py --out _site                # if you touched content or the site
+```
+CI runs all of these plus shellcheck, actionlint, and an offline link check.

@@ -88,3 +88,6 @@ workspace/*
 .env
 .env.local
 *.local
+
+# Personal assistant/tooling instructions (Claude Code loads it; never commit)
+CLAUDE.local.md

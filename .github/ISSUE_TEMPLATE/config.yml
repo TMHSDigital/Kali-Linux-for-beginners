@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Question or stuck on a lab?
+    url: https://github.com/TMHSDigital/Kali-Linux-for-beginners/discussions/categories/q-a
+    about: Ask in Discussions. You'll get help faster, and it helps the next learner too.
+  - name: Security issue
+    url: https://github.com/TMHSDigital/Kali-Linux-for-beginners/security/advisories/new
+    about: Report privately. See SECURITY.md for what counts.

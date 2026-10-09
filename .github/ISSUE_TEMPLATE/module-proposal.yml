@@ -1,0 +1,37 @@
+name: New module proposal
+description: Propose a new module or a big expansion of an existing one.
+labels: ["feature", "content"]
+body:
+  - type: input
+    id: topic
+    attributes:
+      label: Topic
+      placeholder: "06: Web App Basics"
+    validations:
+      required: true
+  - type: textarea
+    id: objectives
+    attributes:
+      label: Learning objectives
+      description: What can a learner do after finishing it? 3-6 bullets.
+    validations:
+      required: true
+  - type: textarea
+    id: lab
+    attributes:
+      label: Lab target
+      description: What container(s) would learners practice against? Must run locally, pinned, multi-arch if possible.
+  - type: textarea
+    id: outline
+    attributes:
+      label: Outline
+      description: Sections, key tools, and the self-grading exercises you have in mind.
+  - type: checkboxes
+    id: rules
+    attributes:
+      label: Ground rules
+      options:
+        - label: All examples target only the lab or documentation ranges, never real third-party systems.
+          required: true
+        - label: Each technique will include expected output and a defensive note.
+          required: true

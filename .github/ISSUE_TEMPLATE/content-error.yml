@@ -1,0 +1,48 @@
+name: Content error
+description: A command doesn't work, the output differs, or something in a module is wrong.
+labels: ["bug", "content"]
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      description: Link to the page on the site or the file in the repo.
+      placeholder: https://tmhsdigital.github.io/Kali-Linux-for-beginners/03-network-recon-and-nmap/
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command you ran
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What the page says should happen
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened
+      description: Paste the real output or error.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where did you run it?
+      options:
+        - The lab's attacker container (setup-lab-env.sh shell)
+        - Kali VM / bare metal
+        - WSL2
+        - GitHub Codespaces
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Kali / tool version
+      description: "`cat /etc/os-release | head -2` and the tool's `--version`."

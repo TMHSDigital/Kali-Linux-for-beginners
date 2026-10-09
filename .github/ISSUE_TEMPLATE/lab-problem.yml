@@ -1,0 +1,44 @@
+name: Lab problem
+description: The Docker practice lab won't start, a target misbehaves, or a lab check fails.
+labels: ["bug", "lab"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The targets are insecure **on purpose** (cleartext HTTP/FTP, anonymous FTP).
+        Please report isolation problems privately via SECURITY.md instead of here.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Include the full output of `./scripts/setup-lab-env.sh` and, if relevant, `bash tests/lab-smoke.sh`.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Host OS
+      options: [Linux, Windows (Docker Desktop), Windows (WSL2 + Docker Engine), macOS (Docker Desktop), GitHub Codespaces, Other]
+    validations:
+      required: true
+  - type: dropdown
+    id: arch
+    attributes:
+      label: CPU architecture
+      options: [x86_64 / amd64, arm64 (Apple Silicon, Raspberry Pi, ...), Other]
+    validations:
+      required: true
+  - type: input
+    id: docker
+    attributes:
+      label: Docker version
+      description: "`docker --version && docker compose version`"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Container logs (optional)
+      description: "`docker compose logs --no-color --tail 50`"
+      render: text

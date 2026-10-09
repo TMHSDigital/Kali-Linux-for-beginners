@@ -62,7 +62,7 @@ EXCLUDE_DIRS = {
     ".venv", "venv", "__pycache__", ".lab", ".pytest_cache", ".ruff_cache",
 }
 # Individual files to skip (internal / not curriculum content).
-EXCLUDE_FILES = {"CLAUDE.md", "AGENTS.md"}
+EXCLUDE_FILES = {"CLAUDE.md", "CLAUDE.local.md", "AGENTS.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "CHANGELOG.md"}
 
 H1_RE = re.compile(r"^\s*#\s+(.+?)\s*$", re.MULTILINE)
 LEVEL_RE = re.compile(r"\s*`\[(Level[^\]]*)\]`\s*$")
