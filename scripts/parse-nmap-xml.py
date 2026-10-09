@@ -10,9 +10,9 @@ installs required; it runs anywhere Python 3.7+ is available.
 
 Examples
 --------
-    nmap -sV -oX scan.xml 172.28.0.10 172.28.0.20
+    nmap -sV -oX scan.xml 10.77.0.10 10.77.0.20
     ./scripts/parse-nmap-xml.py scan.xml
-    nmap -sV -oX - 172.28.0.10 | ./scripts/parse-nmap-xml.py -
+    nmap -sV -oX - 10.77.0.10 | ./scripts/parse-nmap-xml.py -
     ./scripts/parse-nmap-xml.py scan.xml --all-states --no-color
 """
 from __future__ import annotations

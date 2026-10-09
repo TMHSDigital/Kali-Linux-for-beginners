@@ -10,9 +10,9 @@ them.
 
 | Filter | Matches |
 |--------|---------|
-| `host 172.28.0.10` | To/from a host |
+| `host 10.77.0.10` | To/from a host |
 | `src host X` / `dst host X` | Source / destination host |
-| `net 172.28.0.0/16` | A subnet |
+| `net 10.77.0.0/24` | A subnet |
 | `port 80` / `tcp port 80` | A port / TCP port |
 | `portrange 1-1024` | Port range |
 | `tcp port 80 or tcp port 21` | Either |
@@ -29,7 +29,7 @@ them.
 |--------|---------|
 | `ip.addr == X` | To/from host |
 | `ip.src == X` / `ip.dst == X` | Source / dest |
-| `ip.addr == 172.28.0.0/16` | Subnet |
+| `ip.addr == 10.77.0.0/24` | Subnet |
 | `tcp.port == 21` / `udp.port == 53` | Port |
 | `ip.addr==X && tcp.port==Y` | Host + port |
 | `tcp.stream eq N` | One conversation |

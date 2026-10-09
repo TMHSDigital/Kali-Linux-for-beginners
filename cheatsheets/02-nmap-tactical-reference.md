@@ -125,26 +125,26 @@ malware dos`.
 
 ```bash
 # Discover live hosts on a subnet
-nmap -sn 172.28.0.0/24
+nmap -sn 10.77.0.0/24
 
 # Fast triage of a host
-nmap -F -T4 172.28.0.10
+nmap -F -T4 10.77.0.10
 
 # Full TCP + version + default scripts, all outputs
-sudo nmap -sS -p- -sV -sC -T4 -oA full 172.28.0.10
+sudo nmap -sS -p- -sV -sC -T4 -oA full 10.77.0.10
 
 # Two-step: find open ports fast, then version just those
-ports=$(sudo nmap -sS -p- -T4 --min-rate 5000 172.28.0.10 | awk -F/ '/open/{print $1}' | paste -sd,)
-nmap -sV -p "$ports" 172.28.0.10
+ports=$(sudo nmap -sS -p- -T4 --min-rate 5000 10.77.0.10 | awk -F/ '/open/{print $1}' | paste -sd,)
+nmap -sV -p "$ports" 10.77.0.10
 
 # Top UDP services
-sudo nmap -sU --top-ports 20 172.28.0.10
+sudo nmap -sU --top-ports 20 10.77.0.10
 
 # Vuln scripts (authorized)
-nmap --script=vuln -sV 172.28.0.10
+nmap --script=vuln -sV 10.77.0.10
 
 # XML → clean table via the repo parser
-nmap -sV -oX - 172.28.0.10 | ../scripts/parse-nmap-xml.py -
+nmap -sV -oX - 10.77.0.10 | parse-nmap-xml.py -
 ```
 
 ## Port states cheat

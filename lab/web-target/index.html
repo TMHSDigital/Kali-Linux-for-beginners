@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Lab Login (INSECURE DEMO)</title></head>
+<body style="font-family:sans-serif;max-width:32rem;margin:4rem auto">
+  <h1>ACME Intranet (Lab Target)</h1>
+  <p style="color:#b00">Plain HTTP: credentials are sent in cleartext on purpose.</p>
+  <form action="/login" method="POST">
+    <p><label>Username <input name="username" value="admin"></label></p>
+    <p><label>Password <input name="password" type="password" value="hunter2"></label></p>
+    <p><button type="submit">Sign in</button></p>
+  </form>
+</body>
+</html>

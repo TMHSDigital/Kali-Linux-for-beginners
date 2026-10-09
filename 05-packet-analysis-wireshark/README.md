@@ -7,9 +7,17 @@ the two very different filter languages, the core display filters you'll reach
 for daily, session reassembly, credential extraction, and headless analysis with
 `tshark`. Practice against the bundled Docker lab.
 
-> Run the target lab first: from the repo root, `docker compose up -d`. Then
-> capture on the interface facing `172.28.0.0/16` (often `docker0` or
-> `br-pentestlab`). Only ever sniff traffic you are authorized to see.
+> Run the lab first: from the repo root, `./scripts/setup-lab-env.sh`, then
+> `./scripts/setup-lab-env.sh shell` to get a shell on the **attacker** box
+> (`10.77.0.5`). Commands in this module assume that shell, where the lab
+> interface is **`eth0`**. If you run Kali natively on a Linux host that runs
+> Docker itself, capture on **`br-pentestlab`** instead (not `docker0`; the lab
+> uses its own bridge). Only ever sniff traffic you are authorized to see.
+>
+> Capture and generate traffic from the same place. Browsing `127.0.0.1:8080`
+> from your host goes through Docker's port proxy on the loopback interface,
+> so a capture on `eth0`/`br-pentestlab` would show the gateway `10.77.0.1`
+> as the client, not you.
 
 ---
 
@@ -62,16 +70,16 @@ looking for and don't want to lose anything.
 
 ```text
 BPF capture filter examples (note the tcpdump-style syntax):
-  host 172.28.0.10
-  net 172.28.0.0/16
+  host 10.77.0.10
+  net 10.77.0.0/24
   tcp port 80 or tcp port 21
-  src host 172.28.0.10 and not port 22
+  src host 10.77.0.10 and not port 22
   ether host aa:bb:cc:11:22:33
 ```
 
 ```text
 Display filter examples (note the protocol.field == value syntax):
-  ip.addr == 172.28.0.10
+  ip.addr == 10.77.0.10
   tcp.port == 80 && http
   http.request.method == "POST"
   ftp || ftp-data
@@ -86,11 +94,11 @@ display bar; `http.request.method == "POST"` is illegal as a capture filter.
 
 ```text
 # --- Addressing & ports -----------------------------------------------------
-ip.addr == 172.28.0.10                # traffic to OR from that host
-ip.src == 172.28.0.10                 # only sourced from it
-ip.dst == 172.28.0.20                 # only destined to it
+ip.addr == 10.77.0.10                # traffic to OR from that host
+ip.src == 10.77.0.10                 # only sourced from it
+ip.dst == 10.77.0.20                 # only destined to it
 tcp.port == 21                        # either side is port 21
-ip.addr == 172.28.0.10 && tcp.port == 80   # combine (X && Y)
+ip.addr == 10.77.0.10 && tcp.port == 80   # combine (X && Y)
 
 # --- HTTP -------------------------------------------------------------------
 http                                  # all HTTP
@@ -120,7 +128,7 @@ tcp.analysis.retransmission                 # retransmits (loss/latency)
 tcp.stream eq 3                             # everything in TCP stream #3
 
 # --- Booleans & negation ----------------------------------------------------
-http && ip.addr == 172.28.0.10        # AND (&& or 'and')
+http && ip.addr == 10.77.0.10        # AND (&& or 'and')
 ftp || http                           # OR  (|| or 'or')
 !(arp || dns)                         # NOT, hide noise
 ```
@@ -159,21 +167,27 @@ packets. Wireshark reassembles them:
 These labs show why unencrypted protocols expose credentials to anyone who can
 see the traffic. Using the Docker lab:
 
-### HTTP form POST (web-target, 172.28.0.10)
+### HTTP form POST (web-target, 10.77.0.10)
 
-1. Start capturing on the lab interface with display filter cleared.
-2. Browse `http://127.0.0.1:8080/` (mapped to the web target) and submit the
-   login form.
-3. Apply: `http.request.method == "POST"`.
+1. Start capturing on the lab interface with display filter cleared, e.g. in
+   the attacker shell: `tshark -i eth0 -f "tcp port 80" -w web.pcapng &`
+2. Submit the login form from the same box:
+   `curl -s -d 'username=admin&password=hunter2' http://10.77.0.10/login`
+   (With a GUI Kali on the lab network you can instead browse
+   `http://10.77.0.10/` and click **Sign in**.) Stop the capture with `kill %1`.
+3. Open `web.pcapng` (or use `tshark -r web.pcapng -Y ...`) and apply:
+   `http.request.method == "POST"`.
 4. Select the POST → expand **HTML Form URL Encoded** in the detail pane, or
    **Follow → HTTP Stream**. The `username=admin&password=hunter2` body is right
    there in cleartext.
 
-### FTP login (ftp-service, 172.28.0.20)
+### FTP login (ftp-service, 10.77.0.20)
 
 ```bash
 # Generate FTP auth traffic while capturing (cleartext USER/PASS on port 21)
-ftp 127.0.0.1 2121        # or: curl ftp://labuser:labpass@127.0.0.1:2121/
+tshark -i eth0 -f "tcp port 21" -w ftp.pcapng &
+curl -s ftp://labuser:labpass@10.77.0.20/      # or interactively: ftp 10.77.0.20
+kill %1
 ```
 
 Apply `ftp` and read the command stream directly:
@@ -209,7 +223,7 @@ capture files without a GUI, and the only realistic option under WSL2.
 tshark -D
 
 # [Level 1: Intermediate] Live capture with a BPF capture filter, write to file
-sudo tshark -i docker0 -f "tcp port 80 or tcp port 21" -w lab.pcapng
+sudo tshark -i eth0 -f "tcp port 80 or tcp port 21" -w lab.pcapng
 
 # Read a saved capture and apply a DISPLAY filter (-r read, -Y display filter)
 tshark -r lab.pcapng -Y 'http.request.method == "POST"'
@@ -238,15 +252,15 @@ tshark -r lab.pcapng -q -z follow,tcp,ascii,3
 Expected field-extraction output:
 
 ```text
-5    172.28.0.5   USER   labuser
-9    172.28.0.5   PASS   labpass
+5    10.77.0.5   USER   labuser
+9    10.77.0.5   PASS   labpass
 ```
 
 `dumpcap` is the lightweight capture-only tool Wireshark/tshark use under the
 hood; for long unattended captures with ring buffers use it directly:
 
 ```bash
-sudo dumpcap -i docker0 -b filesize:100000 -b files:10 -w rolling.pcapng
+sudo dumpcap -i eth0 -b filesize:100000 -b files:10 -w rolling.pcapng
 ```
 
 ---
@@ -274,7 +288,7 @@ Every extraction above has a one-line fix:
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | No interfaces listed / permission denied | Missing capture privileges | `sudo dpkg-reconfigure wireshark-common`; add self to `wireshark` group |
-| Capture is empty | Wrong interface, or switched network isolates you | Pick the lab interface (`docker0`/`br-pentestlab`); confirm with `tshark -D` |
+| Capture is empty | Wrong interface, or switched network isolates you | In the attacker container use `eth0`; on a Linux host running Docker natively use `br-pentestlab` (never `docker0`, which the lab does not use); confirm with `tshark -D` |
 | See only your own traffic | Switched LAN (no port mirror) | Use the Docker lab, a hub/tap, or SPAN port |
 | HTTPS payloads unreadable | TLS encryption (working as intended) | Need server key or `SSLKEYLOGFILE`; passive decrypt is otherwise impossible |
 | "capture filter syntax error" | Used a *display* filter in the capture box | Capture box = BPF (`tcp port 80`); display bar = `http.request` |

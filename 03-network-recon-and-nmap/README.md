@@ -7,8 +7,16 @@ make scanning work, then drills each scan type with the flags you'll actually
 use in the field, always against the isolated Docker lab from the repo root.
 
 > **Authorized targets only.** Everything here should be run against
-> `172.28.0.0/16` (the bundled lab) or infrastructure you own / have written
+> `10.77.0.0/24` (the bundled lab) or infrastructure you own / have written
 > permission to test. Port scanning third-party hosts can be illegal.
+
+> **Where to run these commands.** Start the lab with
+> `./scripts/setup-lab-env.sh`, then open a shell on the bundled Kali
+> **attacker** box with `./scripts/setup-lab-env.sh shell`. It sits on the lab
+> network at `10.77.0.5`, so every command below works the same on Linux,
+> Docker Desktop (Windows/macOS), and WSL2. You're root there, so `sudo` is
+> optional, and the repo's scripts (like `parse-nmap-xml.py`) are on your
+> `PATH`. If your own Kali runs Docker natively, you can scan from it directly.
 
 ---
 
@@ -56,7 +64,7 @@ ss -tulpn                  # add -p to show the owning process (needs root)
 # [Level 1: Intermediate] DNS resolution
 dig example.com            # full DNS query/answer detail
 dig +short example.com     # just the answer
-dig -x 172.28.0.10         # reverse lookup (PTR)
+dig -x 10.77.0.10         # reverse lookup (PTR)
 nslookup example.com       # simpler, interactive-capable resolver query
 host example.com           # one-line answer
 ```
@@ -65,7 +73,7 @@ Expected `ip -brief a`:
 
 ```text
 lo               UNKNOWN   127.0.0.1/8 ::1/128
-eth0             UP        172.28.0.5/16
+eth0             UP        10.77.0.5/24
 ```
 
 ---
@@ -76,25 +84,29 @@ Before port-scanning, find live hosts so you don't waste time on empty IPs.
 
 ```bash
 # Ping scan (-sn): no port scan, just "is it up?"
-nmap -sn 172.28.0.0/24               # sweep the lab /24
-nmap -sn 172.28.0.10 172.28.0.20     # specific hosts
+nmap -sn 10.77.0.0/24               # sweep the lab /24
+nmap -sn 10.77.0.10 10.77.0.20     # specific hosts
 
 # Skip discovery entirely (-Pn): treat every host as up. Use when ICMP/probes
 # are firewalled and -sn wrongly reports hosts as down.
-nmap -Pn 172.28.0.10
+nmap -Pn 10.77.0.10
 
 # List targets WITHOUT sending packets (-sL): sanity-check your target spec
-nmap -sL 172.28.0.0/28
+nmap -sL 10.77.0.0/28
 ```
 
 Expected `-sn` output:
 
 ```text
-Nmap scan report for 172.28.0.10
-Host is up (0.00021s latency).
-Nmap scan report for 172.28.0.20
-Host is up (0.00018s latency).
-Nmap done: 256 IP addresses (2 hosts up) scanned in 2.15 seconds
+Nmap scan report for 10.77.0.1
+Host is up (0.000053s latency).
+Nmap scan report for web-target.pentest-lab-net (10.77.0.10)
+Host is up (0.000013s latency).
+Nmap scan report for ftp-service.pentest-lab-net (10.77.0.20)
+Host is up (0.000061s latency).
+Nmap scan report for attacker (10.77.0.5)
+Host is up.
+Nmap done: 256 IP addresses (4 hosts up) scanned in 2.49 seconds
 ```
 
 ---
@@ -106,12 +118,12 @@ Nmap done: 256 IP addresses (2 hosts up) scanned in 2.15 seconds
 ```bash
 # [Level 1: Intermediate] TCP Connect (-sT): completes the full handshake.
 # No root needed. Reliable, but the full connection is logged by the target app.
-nmap -sT 172.28.0.10
+nmap -sT 10.77.0.10
 
 # [Level 2+: Advanced / Field Ops] SYN "stealth" (-sS): sends SYN, reads the
 # reply, then sends RST instead of completing the handshake. Faster and less
 # likely to be logged by the application layer. REQUIRES ROOT (raw sockets).
-sudo nmap -sS 172.28.0.10
+sudo nmap -sS 10.77.0.10
 ```
 
 Why "stealth" is only half-true: `-sS` avoids the *application's* connection log
@@ -124,8 +136,8 @@ the packet layer still sees the SYN. It's stealthier, not invisible.
 # [Level 2+: Advanced / Field Ops] UDP (-sU): slow and tricky. UDP has no
 # handshake, so "no reply" is ambiguous (open OR filtered). Nmap relies on ICMP
 # port-unreachable for 'closed'. Scope it tightly to stay sane.
-sudo nmap -sU --top-ports 20 172.28.0.10
-sudo nmap -sU -p 53,67,123,161 172.28.0.10   # DNS, DHCP, NTP, SNMP
+sudo nmap -sU --top-ports 20 10.77.0.10
+sudo nmap -sU -p 53,67,123,161 10.77.0.10   # DNS, DHCP, NTP, SNMP
 ```
 
 ### Service & version detection, OS fingerprinting
@@ -133,21 +145,21 @@ sudo nmap -sU -p 53,67,123,161 172.28.0.10   # DNS, DHCP, NTP, SNMP
 ```bash
 # [Level 1: Intermediate] Service/version detection (-sV): grabs banners and
 # matches them against Nmap's signature DB to name product + version.
-nmap -sV 172.28.0.10
+nmap -sV 10.77.0.10
 
 # [Level 2+: Advanced / Field Ops] OS fingerprinting (-O): infers the OS from
 # TCP/IP stack quirks. Needs root and at least one open + one closed port.
-sudo nmap -O 172.28.0.10
+sudo nmap -O 10.77.0.10
 
 # Combine common options: version + OS + default scripts + traceroute
-sudo nmap -A 172.28.0.10
+sudo nmap -A 10.77.0.10
 ```
 
 Expected `-sV` against the lab web target:
 
 ```text
 PORT   STATE SERVICE VERSION
-80/tcp open  http    nginx 1.27.x
+80/tcp open  http    nginx 1.30.5
 ```
 
 ---
@@ -157,12 +169,12 @@ PORT   STATE SERVICE VERSION
 ### Port specification
 
 ```bash
-nmap 172.28.0.10                       # default: top 1000 TCP ports
-nmap -p 80,443,8080 172.28.0.10        # specific ports
-nmap -p 1-1024 172.28.0.10             # a range
-nmap -p- 172.28.0.10                   # ALL 65535 TCP ports (thorough, slower)
-nmap --top-ports 100 172.28.0.10       # the 100 statistically most common
-nmap -p U:53,T:80,443 172.28.0.10      # mix UDP and TCP in one spec
+nmap 10.77.0.10                       # default: top 1000 TCP ports
+nmap -p 80,443,8080 10.77.0.10        # specific ports
+nmap -p 1-1024 10.77.0.10             # a range
+nmap -p- 10.77.0.10                   # ALL 65535 TCP ports (thorough, slower)
+nmap --top-ports 100 10.77.0.10       # the 100 statistically most common
+nmap -p U:53,T:80,443 10.77.0.10      # mix UDP and TCP in one spec
 ```
 
 ### Timing templates `-T0`..`-T5`
@@ -179,20 +191,20 @@ Timing trades speed for stealth and reliability. Higher = faster/louder.
 | `-T5` | insane | very fast, may miss results / overwhelm targets |
 
 ```bash
-sudo nmap -sS -T4 172.28.0.10          # a good default for a cooperative lab
-sudo nmap -sS -T1 -f 172.28.0.10       # slow + fragment packets to dodge IDS
+sudo nmap -sS -T4 10.77.0.10          # a good default for a cooperative lab
+sudo nmap -sS -T1 -f 10.77.0.10       # slow + fragment packets to dodge IDS
 ```
 
 ### Nmap Scripting Engine (NSE)
 
 ```bash
 # [Level 2+: Advanced / Field Ops] Run script categories
-nmap --script=default 172.28.0.10          # the '-sC' default set
-nmap -sC -sV 172.28.0.10                    # shorthand: default scripts + version
-nmap --script=safe 172.28.0.10             # non-intrusive checks only
-nmap --script=vuln 172.28.0.10             # known-vulnerability probes (louder)
-nmap --script=http-title,http-headers 172.28.0.10   # pick specific scripts
-nmap --script "ftp-*" 172.28.0.20          # all FTP scripts (glob) on the FTP box
+nmap --script=default 10.77.0.10          # the '-sC' default set
+nmap -sC -sV 10.77.0.10                    # shorthand: default scripts + version
+nmap --script=safe 10.77.0.10             # non-intrusive checks only
+nmap --script=vuln 10.77.0.10             # known-vulnerability probes (louder)
+nmap --script=http-title,http-headers 10.77.0.10   # pick specific scripts
+nmap --script "ftp-*" 10.77.0.20          # all FTP scripts (glob) on the FTP box
 ```
 
 > `--script=vuln` and many `intrusive` scripts actively poke services and can
@@ -206,16 +218,16 @@ nmap --script "ftp-*" 172.28.0.20          # all FTP scripts (glob) on the FTP b
 Always save your scans, for reporting, diffing, and tooling.
 
 ```bash
-nmap -sV -oN scan.nmap 172.28.0.10      # -oN: human-readable ("normal")
-nmap -sV -oG scan.gnmap 172.28.0.10     # -oG: greppable (one host per line)
-nmap -sV -oX scan.xml 172.28.0.10       # -oX: XML (machine-parseable)
-nmap -sV -oA scan 172.28.0.10           # -oA: ALL three at once (scan.*)
+nmap -sV -oN scan.nmap 10.77.0.10      # -oN: human-readable ("normal")
+nmap -sV -oG scan.gnmap 10.77.0.10     # -oG: greppable (one host per line)
+nmap -sV -oX scan.xml 10.77.0.10       # -oX: XML (machine-parseable)
+nmap -sV -oA scan 10.77.0.10           # -oA: ALL three at once (scan.*)
 
 # Feed the XML into the repo's parser for a clean port/service/version table:
-nmap -sV -oX lab.xml 172.28.0.10 172.28.0.20
-../scripts/parse-nmap-xml.py lab.xml
+nmap -sV -oX lab.xml 10.77.0.10 10.77.0.20
+parse-nmap-xml.py lab.xml
 # ...or stream straight through without a temp file:
-nmap -sV -oX - 172.28.0.10 | ../scripts/parse-nmap-xml.py -
+nmap -sV -oX - 10.77.0.10 | parse-nmap-xml.py -
 ```
 
 ---
@@ -264,7 +276,7 @@ many ports) sweeps, and prefer DROP to slow attackers down.
 | All hosts show "down" | ICMP/probes filtered | Add `-Pn` to skip host discovery |
 | Scan is painfully slow | DROP firewall + timeouts, or `-p-` | Raise `-T`, scope ports, add `--min-rate` |
 | `-sV` says "tcpwrapped" | Service closes the connection after banner | Try again; may be a proxy/firewall |
-| No lab hosts found | Docker lab not up | `docker compose up -d` from repo root |
+| No lab hosts found | Lab not up, or scanning from a host that can't reach the Docker bridge (Docker Desktop) | `./scripts/setup-lab-env.sh`, then scan from `./scripts/setup-lab-env.sh shell` |
 | OS detection "too many fingerprints" | No open+closed port pair found | Scan more ports; `-Pn` if needed |
 
 ---

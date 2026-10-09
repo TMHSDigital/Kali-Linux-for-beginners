@@ -11,20 +11,28 @@ after). They are not interchangeable.
 
 | Use case | Capture filter (BPF) |
 |----------|----------------------|
-| Only one host | `host 172.28.0.10` |
-| Only one subnet | `net 172.28.0.0/16` |
-| Traffic from a source | `src host 172.28.0.10` |
-| Traffic to a destination | `dst host 172.28.0.20` |
+| Only one host | `host 10.77.0.10` |
+| Only one subnet | `net 10.77.0.0/24` |
+| Traffic from a source | `src host 10.77.0.10` |
+| Traffic to a destination | `dst host 10.77.0.20` |
 | One TCP port | `tcp port 80` |
 | Two ports (either) | `tcp port 80 or tcp port 21` |
 | Everything except SSH (avoid capturing your own admin session) | `not port 22` |
 | One MAC address | `ether host aa:bb:cc:11:22:33` |
 | Only broadcast/multicast | `broadcast or multicast` |
-| HTTP + FTP for the lab web/ftp targets | `host 172.28.0.10 and tcp port 80 or host 172.28.0.20 and tcp port 21` |
+| HTTP + FTP for the lab web/ftp targets | `(host 10.77.0.10 and tcp port 80) or (host 10.77.0.20 and tcp port 21)` |
 | VLAN-tagged traffic | `vlan` |
 | ICMP only (ping troubleshooting) | `icmp` |
 
-CLI usage: `tshark -i docker0 -f "tcp port 80 or tcp port 21" -w out.pcapng`
+CLI usage: `tshark -i eth0 -f "tcp port 80 or tcp port 21" -w out.pcapng`
+(`eth0` inside the attacker container; `br-pentestlab` on a native Linux host.)
+
+> **Precedence trap.** In BPF capture filters, `and` and `or` have **equal
+> precedence and associate left to right**, so
+> `host A and port 80 or host B and port 21` means
+> `((host A and port 80) or host B) and port 21`. Always parenthesize mixed
+> `and`/`or`. Wireshark *display* filters behave differently: `and` binds
+> tighter than `or`, as in most programming languages.
 
 ---
 
@@ -32,12 +40,12 @@ CLI usage: `tshark -i docker0 -f "tcp port 80 or tcp port 21" -w out.pcapng`
 
 | Use case | Display filter |
 |----------|----------------|
-| To or from a host | `ip.addr == 172.28.0.10` |
-| Sourced from a host | `ip.src == 172.28.0.10` |
-| Destined to a host | `ip.dst == 172.28.0.20` |
-| A whole subnet | `ip.addr == 172.28.0.0/16` |
+| To or from a host | `ip.addr == 10.77.0.10` |
+| Sourced from a host | `ip.src == 10.77.0.10` |
+| Destined to a host | `ip.dst == 10.77.0.20` |
+| A whole subnet | `ip.addr == 10.77.0.0/24` |
 | A specific TCP port (either side) | `tcp.port == 21` |
-| Host **and** port together | `ip.addr == 172.28.0.10 && tcp.port == 80` |
+| Host **and** port together | `ip.addr == 10.77.0.10 && tcp.port == 80` |
 | A UDP port | `udp.port == 53` |
 | One TCP conversation | `tcp.stream eq 3` |
 | Connection attempts (SYN, no ACK) | `tcp.flags.syn == 1 && tcp.flags.ack == 0` |
@@ -132,7 +140,7 @@ CLI usage: `tshark -i docker0 -f "tcp port 80 or tcp port 21" -w out.pcapng`
 | Task | Command |
 |------|---------|
 | List interfaces | `tshark -D` |
-| Capture with BPF, save | `sudo tshark -i docker0 -f "tcp port 21" -w ftp.pcapng` |
+| Capture with BPF, save | `sudo tshark -i eth0 -f "tcp port 21" -w ftp.pcapng` |
 | Read + apply display filter | `tshark -r ftp.pcapng -Y 'ftp'` |
 | Print chosen fields | `tshark -r ftp.pcapng -Y ftp -T fields -e ftp.request.command -e ftp.request.arg` |
 | Extract HTTP POST bodies | `tshark -r c.pcapng -Y 'http.request.method=="POST"' -T fields -e http.file_data` |
@@ -149,9 +157,9 @@ CLI usage: `tshark -i docker0 -f "tcp port 80 or tcp port 21" -w out.pcapng`
 | Operator | Meaning | Example |
 |----------|---------|---------|
 | `==` / `eq` | equal | `tcp.port == 80` |
-| `!=` / `ne` | not equal | `ip.src != 172.28.0.5` |
+| `!=` / `ne` | not equal | `ip.src != 10.77.0.5` |
 | `>` `<` `>=` `<=` | comparison | `http.response.code >= 400` |
-| `&&` / `and` | logical AND | `http && ip.addr == 172.28.0.10` |
+| `&&` / `and` | logical AND | `http && ip.addr == 10.77.0.10` |
 | `\|\|` / `or` | logical OR | `ftp || http` |
 | `!` / `not` | negation | `!arp` |
 | `contains` | literal byte substring | `tcp contains "PASS"` |

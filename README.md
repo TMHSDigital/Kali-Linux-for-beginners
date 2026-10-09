@@ -21,21 +21,32 @@ Documentation site: https://tmhsdigital.github.io/Kali-Linux-for-beginners/
 git clone https://github.com/TMHSDigital/Kali-Linux-for-beginners.git
 cd Kali-Linux-for-beginners
 
-# 2. Launch the isolated practice-target lab (Docker required)
-./scripts/setup-lab-env.sh          # verifies Docker + bridge, then starts it
-#   or: docker compose up -d
+# 2. Launch the practice lab (Docker required; first run downloads Kali)
+./scripts/setup-lab-env.sh          # checks Docker + subnet, starts it, waits for health
+#   or: docker compose up -d --build
 
-# 3. Open module 01 to start, or read the documentation site.
+# 3. Get a shell on the Kali attacker box that sits on the lab network
+./scripts/setup-lab-env.sh shell
+
+# 4. Open module 01 to start, or read the documentation site.
 ```
 
-The lab targets come up on an isolated `172.28.0.0/16` bridge:
+The lab comes up on a private `10.77.0.0/24` Docker bridge:
 
-| Target | Address | Purpose |
-|--------|---------|---------|
-| `web-target` | `172.28.0.10` | Plain-HTTP login form for intercepting cleartext credentials |
-| `ftp-service` | `172.28.0.20` | Anonymous FTP for capturing cleartext authentication |
+| Host | Address | Purpose |
+|------|---------|---------|
+| `attacker` | `10.77.0.5` | Kali toolbox (nmap, tshark, tcpdump, ftp, curl) to run the modules from |
+| `web-target` | `10.77.0.10` | Plain-HTTP login form for intercepting cleartext credentials |
+| `ftp-service` | `10.77.0.20` | vsftpd with anonymous and `labuser`/`labpass` logins, all cleartext |
 
-Stop it with `docker compose down`.
+The attacker box works the same on Linux, Docker Desktop (Windows/macOS), and
+WSL2. With Docker Desktop, the `10.77.0.x` addresses aren't reachable from your
+host, so run the module commands from `./scripts/setup-lab-env.sh shell`. The
+repo is mounted read-only at `/lab`, and scans/captures you save in
+`/root/work` show up in `workspace/` in your clone. From the host itself, the
+targets are also published on `127.0.0.1:8080` (web) and `127.0.0.1:2121` (FTP).
+
+Stop it with `./scripts/setup-lab-env.sh down` (or `docker compose down`).
 
 ## Curriculum
 
@@ -113,19 +124,21 @@ Kali-Linux-for-beginners/
 ├── 04-wireless-security-aircrack/    # Level 2
 ├── 05-packet-analysis-wireshark/     # Level 3
 ├── cheatsheets/                      # Quick reference
+├── lab/                              # Lab images: attacker, web-target, ftp-service
 ├── scripts/
 │   ├── setup-lab-env.sh              # Guarded lab launcher
 │   ├── parse-nmap-xml.py             # Nmap XML to terminal table
 │   └── build-site.py                 # Generates the docs site from the repo
 ├── site/                             # Docs site source (static, no build tools)
-├── docker-compose.yml                # Isolated practice targets
+├── docker-compose.yml                # Practice lab (attacker + targets)
 └── .github/workflows/pages.yml       # Deploys the docs site
 ```
 
 Turn an Nmap scan into a readable table:
 
 ```bash
-nmap -sV -oX - 172.28.0.10 | ./scripts/parse-nmap-xml.py -
+nmap -sV -oX - 10.77.0.10 | parse-nmap-xml.py -     # in the attacker shell (on PATH)
+# from your own clone instead: ./scripts/parse-nmap-xml.py scan.xml
 ```
 
 ## Documentation site

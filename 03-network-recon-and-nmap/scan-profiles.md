@@ -7,8 +7,8 @@ authorization.
 
 ```bash
 # Set your target once, then paste any profile below.
-T="172.28.0.0/24"      # e.g. the lab subnet
-# T="172.28.0.10 172.28.0.20"   # or specific hosts
+T="10.77.0.0/24"      # e.g. the lab subnet
+# T="10.77.0.10 10.77.0.20"   # or specific hosts
 ```
 
 > Legend for tags: `[L1]` intermediate · `[L2]` advanced/field-ops. Anything
@@ -44,9 +44,9 @@ nmap -F -T4 "$T"                       # -F = top 100 ports
 sudo nmap -sS -p- -T4 --min-rate 2000 "$T"
 
 # [L2] "Masscan-style" speed: find open ports fast, then version-scan only those
-ports=$(sudo nmap -sS -p- -T4 --min-rate 5000 172.28.0.10 \
+ports=$(sudo nmap -sS -p- -T4 --min-rate 5000 10.77.0.10 \
         | awk -F/ '/open/{print $1}' | paste -sd,)
-nmap -sV -p "$ports" 172.28.0.10
+nmap -sV -p "$ports" 10.77.0.10
 ```
 
 ---
@@ -61,7 +61,7 @@ sudo nmap -sS -p- -sV -sC -O --traceroute -T4 -oA full-tcp "$T"
 sudo nmap -sU --top-ports 50 -sV -T4 -oA full-udp "$T"
 
 # [L2] Everything-and-the-kitchen-sink single host, all output formats
-sudo nmap -A -p- -T4 -oA deep-172-28-0-10 172.28.0.10
+sudo nmap -A -p- -T4 -oA deep-172-28-0-10 10.77.0.10
 ```
 
 ---
@@ -70,16 +70,16 @@ sudo nmap -A -p- -T4 -oA deep-172-28-0-10 172.28.0.10
 
 ```bash
 # [L2] Slow SYN scan, fragmented packets, no ping, decoy timing
-sudo nmap -sS -Pn -f -T1 -p 21,22,80,443 172.28.0.10
+sudo nmap -sS -Pn -f -T1 -p 21,22,80,443 10.77.0.10
 
 # [L2] Decoys: hide your real IP among fakes (ME = your position in the list)
-sudo nmap -sS -Pn -D 10.0.0.5,10.0.0.6,ME,10.0.0.7 172.28.0.10
+sudo nmap -sS -Pn -D 10.0.0.5,10.0.0.6,ME,10.0.0.7 10.77.0.10
 
 # [L2] Spoof source port (some firewalls trust 53/80) and randomize host order
 sudo nmap -sS -Pn --source-port 53 --randomize-hosts -T2 "$T"
 
 # [L2] Idle/zombie scan, attribute the scan to a third "zombie" host
-sudo nmap -sI <zombie_ip> 172.28.0.10
+sudo nmap -sI <zombie_ip> 10.77.0.10
 ```
 
 > These reduce (never eliminate) detectability and legitimately trip IDS if
@@ -94,14 +94,14 @@ sudo nmap -sI <zombie_ip> 172.28.0.10
 nmap -sV --version-intensity 2 "$T"
 
 # [L2] Max version intensity (all probes) for stubborn services
-nmap -sV --version-intensity 9 172.28.0.10
+nmap -sV --version-intensity 9 10.77.0.10
 
 # [L1] Default + version, the everyday enumeration combo
 nmap -sC -sV -oA enum "$T"
 
 # [L2] Banner grab specific services
-nmap -sV -p 21 --script=banner 172.28.0.20        # FTP banner
-nmap -sV -p 80 --script=http-title,http-headers,http-methods 172.28.0.10
+nmap -sV -p 21 --script=banner 10.77.0.20        # FTP banner
+nmap -sV -p 80 --script=http-title,http-headers,http-methods 10.77.0.10
 ```
 
 ---
@@ -113,13 +113,13 @@ nmap -sV -p 80 --script=http-title,http-headers,http-methods 172.28.0.10
 nmap --script=safe -sV "$T"
 
 # [L2] The vuln category (actively probes for known CVEs, can be disruptive)
-nmap --script=vuln -sV 172.28.0.10
+nmap --script=vuln -sV 10.77.0.10
 
 # [L2] FTP-specific: anonymous login + known vsftpd issues (our lab FTP box)
-nmap -p 21 --script "ftp-anon,ftp-syst,ftp-vsftpd-backdoor" 172.28.0.20
+nmap -p 21 --script "ftp-anon,ftp-syst,ftp-vsftpd-backdoor" 10.77.0.20
 
 # [L2] HTTP enumeration bundle
-nmap -p 80 --script "http-enum,http-title,http-headers" 172.28.0.10
+nmap -p 80 --script "http-enum,http-title,http-headers" 10.77.0.10
 ```
 
 ---
@@ -127,30 +127,30 @@ nmap -p 80 --script "http-enum,http-title,http-headers" 172.28.0.10
 ## G. Lab-specific quick wins (against the bundled Docker targets)
 
 ```bash
-# 1) Confirm both lab targets are up
-nmap -sn 172.28.0.0/24
+# 1) Confirm the lab is up (gateway .1, attacker .5, targets .10 and .20)
+nmap -sn 10.77.0.0/24
 
 # 2) Full service picture of both boxes, saved as XML, piped to the parser
-nmap -sV -sC -oX lab.xml 172.28.0.10 172.28.0.20
-../scripts/parse-nmap-xml.py lab.xml
+nmap -sV -sC -oX lab.xml 10.77.0.10 10.77.0.20
+parse-nmap-xml.py lab.xml
 
 # 3) Prove the web target speaks plain HTTP (feeds module 05 capture work)
-nmap -p 80 -sV --script=http-methods,http-title 172.28.0.10
+nmap -p 80 -sV --script=http-methods,http-title 10.77.0.10
 
 # 4) Prove the FTP target allows anonymous login (cleartext auth for module 05)
-nmap -p 21 -sV --script=ftp-anon 172.28.0.20
+nmap -p 21 -sV --script=ftp-anon 10.77.0.20
 ```
 
 Expected shape from profile G-2 via the parser:
 
 ```text
-Host: 172.28.0.10   Status: up
+Host: 10.77.0.10 (web-target.pentest-lab-net)   Status: up
   PORT   PROTO  STATE  SERVICE  PRODUCT / VERSION
-  80     tcp    open   http     nginx 1.27.x
+  80     tcp    open   http     nginx 1.30.5
 
-Host: 172.28.0.20   Status: up
+Host: 10.77.0.20 (ftp-service.pentest-lab-net)   Status: up
   PORT   PROTO  STATE  SERVICE  PRODUCT / VERSION
-  21     tcp    open   ftp      vsftpd 3.x
+  21     tcp    open   ftp      vsftpd 2.0.8 or later
 ```
 
 ---
