@@ -8,13 +8,17 @@ wording changes are patches.
 ## [Unreleased]
 
 ### Changed
-- Redesigned the documentation site with an ops-console look: level-colored
-  course path, a hero terminal showing a real lab scan, an "On this page"
-  outline with scroll tracking, terminal-framed code blocks with copy buttons,
-  breadcrumbs, reading-time estimates, GitHub alert callouts, scrollable
-  tables, a site footer, `Ctrl+K` search, and a progress reset. New favicon,
-  social preview image, and README screenshot.
-- Reworked the README: centered header, badges, a real lab scan, a cheatsheet
+- Redesigned the documentation site. The home page lists the modules with what
+  each one teaches, its level, and its time, followed by the lab hosts and the
+  reference pages. Doc pages gain an "On this page" outline with scroll
+  tracking, breadcrumbs, code blocks with a language label and copy button,
+  level labels for inline `[Level N]` tags, GitHub alert callouts, scrollable
+  tables, a site footer, `Ctrl+K` search, and a progress reset. Inside a
+  module, the navigation labels the module page "Overview" instead of
+  repeating its title. New favicon, social preview image, and README
+  screenshot.
+- Reworked the README: a shorter header, a plain "About" section that covers
+  who the course is for and what you need, a real lab scan, a cheatsheet
   table, folded reference sections, and contributor and security pointers.
 
 ### Fixed

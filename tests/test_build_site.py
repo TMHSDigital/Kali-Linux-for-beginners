@@ -178,18 +178,17 @@ def test_real_repo_builds(site_builder, tmp_path):
     assert any(s["id"] == "cheatsheets" for s in result["sections"])
 
 
-def test_code_blocks_get_terminal_frame(built):
+def test_code_blocks_get_header_bar(built):
     out, _ = built
     page = read(out, "01-first-module/index.html")
     assert '<div class="codeblock" data-lang="bash"><div class="codeblock-bar">' in page
     assert page.count('class="codeblock"') == 1
 
 
-def test_toc_and_reading_time(built):
+def test_toc_and_level_badges(built):
     out, _ = built
     page = read(out, "01-first-module/index.html")
     assert '<aside class="toc"' in page and 'href="#setup-1"' in page
-    assert "min read</span>" in page
     assert '<div class="doc-badges" data-level="0">' in page
     # A page with fewer than two headings gets no outline.
     assert '<aside class="toc"' not in read(out, "cheatsheets/nmap/index.html")
@@ -212,10 +211,28 @@ def test_github_alerts_become_callouts(site_builder, tmp_path):
     assert '<blockquote class="callout callout-note">' in page
 
 
-def test_landing_page_path_and_stats(built):
+def test_landing_page_module_list(built):
     out, _ = built
     page = read(out, "index.html")
-    assert 'class="path"' in page and page.count('class="path-step"') == 2
-    assert '<li class="path-step" data-level="0">' in page
-    assert "<strong>~2 h</strong>" in page
+    assert page.count('<li class="module" data-level=') == 2
+    assert '<li class="module" data-level="0" data-section="01-first-module">' in page
+    assert "about 2 hours" in page
     assert "10.77.0.5" in page and 'class="terminal"' in page
+
+
+def test_nav_drops_repeated_module_names(built):
+    out, _ = built
+    page = read(out, "01-first-module/index.html")
+    # The module README is "Overview" under its numbered heading, not the title again.
+    assert '<h3><span class="nav-num">01</span>' in page
+    assert '<span class="done-mark" aria-hidden="true"></span>Overview</a>' in page
+
+
+def test_inline_level_tags_become_labels(site_builder, tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "README.md").write_text("# P\n\n## Scan `[Level 2+: Advanced / Field Ops]`\n\nText.\n")
+    out = tmp_path / "_site"
+    site_builder.build(repo, out, REPO_ROOT / "site")
+    page = read(out, "overview/index.html")
+    assert '<span class="level-tag" data-level="2">Level 2+: Advanced / Field Ops</span>' in page

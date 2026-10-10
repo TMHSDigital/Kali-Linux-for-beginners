@@ -13,34 +13,27 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/TMHSDigital/Kali-Linux-for-beginners/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/TMHSDigital/Kali-Linux-for-beginners/actions/workflows/ci.yml)
 [![Docs site](https://img.shields.io/website?url=https%3A%2F%2Ftmhsdigital.github.io%2FKali-Linux-for-beginners%2F&style=flat-square&label=docs%20site&up_message=online)](https://tmhsdigital.github.io/Kali-Linux-for-beginners/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
-[![Last commit](https://img.shields.io/github/last-commit/TMHSDigital/Kali-Linux-for-beginners?style=flat-square)](https://github.com/TMHSDigital/Kali-Linux-for-beginners/commits/main)
-<br>
-[![Modules](https://img.shields.io/badge/modules-5-36c5f0?style=flat-square)](#curriculum)
-[![Time](https://img.shields.io/badge/time-~18%20hours-36c5f0?style=flat-square)](#curriculum)
-[![Docker lab](https://img.shields.io/badge/lab-Docker-2496ed?style=flat-square&logo=docker&logoColor=white)](#the-practice-lab)
 [![Open in Codespaces](https://img.shields.io/badge/Codespaces-open-181717?style=flat-square&logo=github)](https://codespaces.new/TMHSDigital/Kali-Linux-for-beginners)
-[![PRs welcome](https://img.shields.io/badge/PRs-welcome-3fb950?style=flat-square)](CONTRIBUTING.md)
 
-[![The course website: a dark terminal-style landing page showing a real nmap scan of the practice lab](site/assets/screenshot.png)](https://tmhsdigital.github.io/Kali-Linux-for-beginners/)
+[![The course website: the module list and a real nmap scan of the practice lab](site/assets/screenshot.png)](https://tmhsdigital.github.io/Kali-Linux-for-beginners/)
 
 </div>
 
-## Why this course
+## About
 
-- **A real lab, not screenshots.** One command starts a Kali attacker box and
-  deliberately insecure targets on a private Docker network. You scan them,
-  sniff them, and log in to them.
-- **Command, real output, and the defense, every time.** Each technique shows
-  what to run, what it prints in the lab, and what it looks like to the blue
-  team, so you learn an attack from both sides.
-- **Self-grading.** Lab checks in modules 01 and 02 print PASS or FAIL, so you
-  know when you have it.
-- **Offline and account-free.** No sign-ups, no VPN, no time limits. Clone it,
-  or open it in Codespaces with nothing installed.
+Five modules take you from the Linux shell to network scanning, wireless
+attacks, and packet analysis. Every technique gives the command, the output it
+prints in the practice lab, and how a defender spots or stops it. The lab is a
+set of Docker containers on a private network: a Kali attacker and two
+deliberately insecure targets. Lab checks in modules 01 and 02 print PASS or
+FAIL so you know when you have it.
 
-| Who it's for | What you need | How long it takes |
-|---|---|---|
-| Complete beginners to Linux and security, and anyone who wants a hands-on refresher | A laptop with 8 GB RAM and Docker, or a free GitHub account for Codespaces. No prior Linux needed. A Wi-Fi adapter only for module 04's live work. | About 18 hours across five modules, at your own pace |
+It is written for complete beginners to Linux and security. You need a laptop
+with 8 GB of RAM and Docker, or a free GitHub account to use Codespaces instead.
+Module 04's live wireless work also needs a USB Wi-Fi adapter. Plan on about 18
+hours at your own pace. It's free, needs no account or VPN, and works offline.
+It pairs well with hosted platforms like TryHackMe or Hack The Box Academy:
+learn the foundations here, then go there for more targets.
 
 > [!WARNING]
 > **For education and authorized testing only.** Using these techniques against
@@ -68,14 +61,12 @@ cd Kali-Linux-for-beginners
 
 Stop the lab with `./scripts/setup-lab-env.sh down` (or `docker compose down`).
 
-**No Docker? Use Codespaces.** Click the **Codespaces** badge above. You get a
+**No Docker? Use Codespaces.** Click the **Codespaces** badge at the top. You get a
 browser-based VS Code where the lab builds and starts on its own (the first
 launch takes a few minutes while Kali downloads). Run
 `./scripts/setup-lab-env.sh shell` and start at module 01. Modules 01-03 and 05
 work fully there; live wireless (module 04) needs real hardware. Codespaces is
 free up to GitHub's monthly quota, so stop the codespace when you're done.
-
-<p align="right"><a href="#kali-linux-for-beginners">Back to top</a></p>
 
 ## Curriculum
 
@@ -97,8 +88,6 @@ Commands are tagged by depth so you can find your level:
 New to all of this? Start at [module 01](01-terminal-and-linux-core/), do its
 lab exercises, then continue in order with the [cheatsheets](#cheatsheets) open
 alongside.
-
-<p align="right"><a href="#kali-linux-for-beginners">Back to top</a></p>
 
 ## The practice lab
 
@@ -170,8 +159,6 @@ Driver compilation and VM USB passthrough are covered in
 
 </details>
 
-<p align="right"><a href="#kali-linux-for-beginners">Back to top</a></p>
-
 ## Cheatsheets
 
 | Cheatsheet | Covers |
@@ -183,22 +170,6 @@ Driver compilation and VM USB passthrough are covered in
 
 All four print cleanly from the docs site.
 
-## How this compares
-
-This project complements platforms like TryHackMe and Hack The Box Academy
-rather than replacing them:
-
-| | This project | Hosted platforms |
-|---|---|---|
-| Cost | Free, MIT licensed | Free tiers, paid for most content |
-| Account / VPN | None | Account, often a VPN connection |
-| Where the lab runs | Your machine or your Codespace, works offline | Their cloud |
-| Defensive notes | On every technique | Varies by room or course |
-| Depth | Beginner foundations | Beginner to advanced |
-
-A good route is to work through these modules first, then move to a hosted
-platform for more targets.
-
 ## Teaching with this course
 
 Running it for a class, club, or study group? The
@@ -206,8 +177,6 @@ Running it for a class, club, or study group? The
 six-session schedule, and how to handle the wireless
 module safely. Questions and show-and-tell go in
 [Discussions](https://github.com/TMHSDigital/Kali-Linux-for-beginners/discussions).
-
-<p align="right"><a href="#kali-linux-for-beginners">Back to top</a></p>
 
 ## Project structure
 
@@ -258,10 +227,9 @@ page's title from its first heading, and pre-renders every page to static HTML,
 so each document has its own URL, link preview, and search-engine entry. Adding
 a module or cheatsheet is enough for it to appear.
 
-The site has full-text search that finds commands (not just titles), per-browser
-progress tracking, dark and light themes, an "On this page" outline, printable
-cheatsheets, and offline support after your first visit. It loads no
-third-party scripts, and its Content-Security-Policy is `script-src 'self'`.
+Search covers the full text of every page, so it finds commands and flags as
+well as titles. Progress is stored in your browser, pages work offline after the
+first visit, and the site loads no third-party scripts.
 
 Preview it locally:
 

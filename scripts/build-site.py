@@ -73,6 +73,14 @@ LAB_HOSTS = [
     ("web-target", "10.77.0.10", "nginx, plain HTTP", "A login form that sends credentials in cleartext."),
     ("ftp-service", "10.77.0.20", "vsftpd", "Anonymous and labuser/labpass logins, all cleartext."),
 ]
+# What each module leaves you able to do (keep in step with the README's curriculum table).
+MODULE_OUTCOMES = {
+    "01": "Navigate, inspect, and manipulate Linux from the shell; use pipes and redirection.",
+    "02": "Read the Unix privilege model; audit SUID and sudo for escalation surface.",
+    "03": "Map a network and choose the right scan for stealth, speed, or depth.",
+    "04": "Capture and crack a WPA2 handshake in a lab; understand WPA3 and PMF defenses.",
+    "05": "Reassemble sessions, extract cleartext credentials, and describe the fix.",
+}
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; "
        "img-src 'self' data: https:; connect-src 'self'; font-src 'self'; "
        "object-src 'none'; base-uri 'self'; form-action 'none'")
@@ -326,27 +334,29 @@ class Renderer:
         if len(desc) > 160:
             desc = desc[:157].rsplit(" ", 1)[0] + "..."
         body = PRE_RE.sub(frame_code, body)
+        # Inline `[Level N: ...]` tags in headings and prose become level-coloured labels.
+        body = LEVEL_CODE_RE.sub(lambda m: f'<span class="level-tag" data-level="{level_num(m.group(1))}">'
+                                           f'{m.group(1)}</span>', body)
         body = body.replace("<table>", '<div class="table-wrap"><table>').replace("</table>", "</table></div>")
         # GitHub alert syntax ("> [!WARNING]") becomes a styled callout.
         body = ALERT_RE.sub(lambda m: f'<blockquote class="callout callout-{alert_kind(m.group(1))}">\n<p>', body)
         body = CALLOUT_RE.sub(lambda m: f'<blockquote class="callout callout-{callout_kind(m.group(1))}">'
                                         f'\n<p><strong>{m.group(1)}', body)
-        return {"html": body, "headings": headings, "toc": toc, "text": plain, "description": desc,
-                "minutes": reading_minutes(plain)}
+        return {"html": body, "headings": headings, "toc": toc, "text": plain, "description": desc}
 
 
 PRE_RE = re.compile(r"<pre( class=\"highlight\")?><code(?: class=\"language-([^\"]+)\")?>.*?</code></pre>", re.S)
 LEVEL_TAG_RE = re.compile(r"\s*\[Level[^\]]*\]")
+LEVEL_CODE_RE = re.compile(r"<code>\[(Level [^\]<]*)\]</code>")
 ALERT_RE = re.compile(r"<blockquote>\n<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*")
 CALLOUT_RE = re.compile(r"<blockquote>\n<p><strong>([^<]+)")
 WARN_WORDS = ("legal", "authori", "warning", "sensitive", "trap", "education")
 
 
 def frame_code(m: re.Match) -> str:
-    """Wrap a code block in a terminal-window frame (the copy button is added by app.js)."""
+    """Give a code block a header bar with its language (app.js adds the copy button there)."""
     lang = m.group(2) or "text"
     return (f'<div class="codeblock" data-lang="{lang}"><div class="codeblock-bar">'
-            f'<span class="codeblock-dots" aria-hidden="true"></span>'
             f'<span class="codeblock-lang">{lang}</span></div>{m.group(0)}</div>')
 
 
@@ -356,11 +366,6 @@ def alert_kind(kind: str) -> str:
 
 def callout_kind(label: str) -> str:
     return "warn" if any(w in label.lower() for w in WARN_WORDS) else "note"
-
-
-def reading_minutes(plain: str) -> int:
-    """Rough reading time; command-heavy pages read slower than prose, so 180 wpm."""
-    return max(1, round(len(plain.split()) / 180))
 
 
 def level_num(level: str) -> str:
@@ -408,20 +413,43 @@ def section_level(sec: Dict) -> str:
     return level_num(sec["items"][0]["level"]) if sec["items"] else ""
 
 
+def is_module(sec: Dict) -> bool:
+    return bool(re.match(r"^\d", sec["id"]))
+
+
+def module_name(sec: Dict) -> Tuple[str, str]:
+    """'01. Terminal & Linux Core' -> ('01', 'Terminal & Linux Core')."""
+    num, _, name = sec["title"].partition(". ")
+    return (num, name) if name else ("", sec["title"])
+
+
+def short_title(sec: Dict, idx: int, item: Dict) -> str:
+    """Item label inside its module: the README is the 'Overview', and a
+    ': <module name>' suffix that only repeats the heading above is dropped."""
+    if not is_module(sec):
+        return item["title"]
+    if idx == 0:
+        return "Overview"
+    name = module_name(sec)[1]
+    return re.sub(rf":\s*{re.escape(name)}$", "", item["title"])
+
+
 def nav_html(sections: List[Dict], current_url: str) -> str:
     out = []
     for sec in sections:
         items = []
-        for it in sec["items"]:
+        for i, it in enumerate(sec["items"]):
             active = it["url"] == current_url
             items.append(
                 f'<li><a href="{esc(rel_href(current_url, it["url"]))}" data-doc="{esc(it["url"])}"'
                 + (' class="active" aria-current="page"' if active else "")
-                + f'><span class="done-mark" aria-hidden="true"></span>{esc(it["title"])}</a></li>'
+                + f'><span class="done-mark" aria-hidden="true"></span>{esc(short_title(sec, i, it))}</a></li>'
             )
         lvl = section_level(sec)
         attr = f' data-level="{lvl}"' if lvl else ""
-        out.append(f'<div class="nav-section"{attr}><h3>{esc(sec["title"])}</h3>'
+        num, name = module_name(sec) if is_module(sec) else ("", sec["title"])
+        num_html = f'<span class="nav-num">{esc(num)}</span>' if num else ""
+        out.append(f'<div class="nav-section"{attr}><h3>{num_html}{esc(name)}</h3>'
                    f'<ul>{"".join(items)}</ul></div>')
     return "".join(out)
 
@@ -550,7 +578,6 @@ def doc_body(entry: Dict, rendered: Dict, prev: Optional[Dict], nxt: Optional[Di
         b.append(f'<span class="badge">{esc(entry["level"])}</span>')
     if entry["time"]:
         b.append(f'<span class="badge badge-time">{esc(entry["time"])}</span>')
-    b.append(f'<span class="badge badge-read">{rendered.get("minutes", 1)} min read</span>')
     lvl = level_num(entry["level"])
     lvl_attr = f' data-level="{lvl}"' if lvl else ""
     meta = f'<div class="doc-badges"{lvl_attr}>{"".join(b)}</div>'
@@ -595,8 +622,6 @@ HERO_SESSION = [
     ("hit", "21/tcp open  ftp"),
     ("out", ""),
     ("dim", "Nmap done: 2 IP addresses (2 hosts up) scanned in 0.19 seconds"),
-    ("comment", "# next: catch the FTP login in cleartext (module 05)"),
-    ("cursor", ""),
 ]
 
 
@@ -605,129 +630,101 @@ def hero_terminal() -> str:
     for kind, text in HERO_SESSION:
         if kind == "prompt":
             lines.append(f'<span class="t-prompt">root@attacker:~#</span> <span class="t-cmd">{esc(text)}</span>')
-        elif kind == "cursor":
-            lines.append('<span class="t-prompt">root@attacker:~#</span> <span class="t-cursor"></span>')
         else:
             lines.append(f'<span class="t-{kind}">{esc(text)}</span>')
-    return f"""<div class="terminal" role="img" aria-label="A real nmap scan of the practice lab">
-            <div class="terminal-bar"><span class="codeblock-dots" aria-hidden="true"></span>
-              <span class="terminal-title">root@attacker (10.77.0.5)</span></div>
+    return f"""<figure class="terminal">
+            <figcaption class="terminal-bar">attacker (10.77.0.5): a real scan of the lab</figcaption>
             <pre class="terminal-body">{chr(10).join(lines)}</pre>
-          </div>"""
+          </figure>"""
 
 
 def landing_body(sections: List[Dict], docs_meta: Dict[str, Dict]) -> str:
-    modules = [s for s in sections if re.match(r"^\d", s["id"])]
-    others = [s for s in sections if s["id"] != "home" and not re.match(r"^\d", s["id"])]
+    modules = [s for s in sections if is_module(s)]
+    others = [s for s in sections if s["id"] != "home" and not is_module(s)]
     first = first_module_url(sections)
     total_h = sum(hours(s["items"][0]["time"]) for s in modules)
-    sheets = next((len(s["items"]) for s in sections if s["id"] == "cheatsheets"), 0)
-    stats = [(str(len(modules)), "modules"), (f"~{total_h:g} h", "of guided work"),
-             (str(sheets), "cheatsheets"), (str(len(LAB_HOSTS)), "lab hosts on 10.77.0.0/24")]
-    stats_html = "".join(f'<li><strong>{esc(v)}</strong><span>{esc(k)}</span></li>' for v, k in stats)
 
-    path = []
+    rows = []
     for sec in modules:
         lead = sec["items"][0]
-        meta = docs_meta.get(lead["path"], {})
+        num, name = module_name(sec)
         lvl = level_num(lead["level"])
         label = lead["level"].split(":", 1)[-1].strip() if lead["level"] else ""
-        num = sec["id"].split("-", 1)[0]
-        name = sec["title"].split(". ", 1)[-1]
-        badges = f'<span class="badge badge-time">{esc(lead["time"])}</span>' if lead["time"] else ""
-        extra = "".join(f'<li><a href="{esc(it["url"])}">{esc(it["title"])}</a></li>'
-                        for it in sec["items"][1:])
-        path.append(f"""<li class="path-step" data-level="{lvl}">
-            <span class="path-node" aria-hidden="true">{esc(num)}</span>
-            <article class="card path-card" data-section="{esc(sec["id"])}">
-              <p class="path-level">L{esc(lvl)} &middot; {esc(label)}</p>
+        outcome = MODULE_OUTCOMES.get(num) or docs_meta.get(lead["path"], {}).get("description", "")
+        subs = "".join(f'<li><a href="{esc(it["url"])}">{esc(short_title(sec, i, it))}</a></li>'
+                       for i, it in enumerate(sec["items"]) if i)
+        rows.append(f"""<li class="module" data-level="{lvl}" data-section="{esc(sec["id"])}">
+            <span class="module-num">{esc(num)}</span>
+            <div class="module-body">
               <h3><a href="{esc(lead["url"])}">{esc(name)}</a></h3>
-              <p>{esc(meta.get("description", ""))}</p>
-              <div class="card-foot">
-                <div class="card-badges">{badges}</div>
-                <span class="card-progress" data-progress></span>
-              </div>
-              <a class="card-link" href="{esc(lead["url"])}">Open module</a>
-              {f'<ul class="card-links">{extra}</ul>' if extra else ""}
-            </article>
+              <p>{esc(outcome)}</p>
+              {f'<ul class="module-pages">{subs}</ul>' if subs else ""}
+            </div>
+            <p class="module-meta"><span class="module-level">Level {esc(lvl)} &middot; {esc(label)}</span>
+              <span>{esc(lead["time"])}</span><span class="module-progress" data-progress></span></p>
           </li>""")
 
-    hosts = "".join(f"""<li class="host host-{esc(name)}">
-              <p class="host-name">{esc(name)}</p>
-              <p class="host-ip">{esc(ip)}</p>
-              <p class="host-role">{esc(role)}</p>
-              <p class="host-desc">{esc(desc)}</p>
-            </li>""" for name, ip, role, desc in LAB_HOSTS)
+    hosts = "".join(f"""<tr><th scope="row"><code>{esc(name)}</code></th><td><code>{esc(ip)}</code></td>
+              <td>{esc(role)}</td><td>{esc(desc)}</td></tr>""" for name, ip, role, desc in LAB_HOSTS)
 
-    other_cards = []
+    lab_cmds = "\n".join(
+        f'<span class="t-prompt">$</span> {esc(cmd):<34}<span class="t-dim"># {esc(note)}</span>'
+        for cmd, note in (("./scripts/setup-lab-env.sh", "build and start the lab"),
+                          ("./scripts/setup-lab-env.sh shell", "open a shell on the attacker")))
+
+    refs = []
     for sec in others:
-        links = "".join(f'<li><a href="{esc(it["url"])}">{esc(it["title"])}</a></li>'
-                        for it in sec["items"])
-        other_cards.append(f'<article class="card ref-card"><h3>{esc(sec["title"])}</h3>'
-                           f'<ul class="card-links">{links}</ul></article>')
-    reference = (f'<section class="band" aria-labelledby="ref-h"><p class="eyebrow">Keep these open</p>'
-                 f'<h2 id="ref-h">Reference</h2>'
-                 f'<div class="card-grid">{"".join(other_cards)}</div></section>') if other_cards else ""
+        links = "".join(f'<li><a href="{esc(it["url"])}">{esc(it["title"])}</a></li>' for it in sec["items"])
+        refs.append(f'<div class="ref-group"><h3>{esc(sec["title"])}</h3><ul>{links}</ul></div>')
+    reference = (f'<section class="band" aria-labelledby="ref-h"><h2 id="ref-h">Reference</h2>'
+                 f'<div class="ref">{"".join(refs)}</div></section>') if refs else ""
 
     return f"""<div id="doc" class="landing">
         <section class="hero">
           <div class="hero-copy">
-            <p class="eyebrow"><span class="pulse" aria-hidden="true"></span>Free &middot; self-paced &middot;
-              no account, no VPN</p>
-            <h1>Learn Kali Linux by <span class="accent">doing</span>.</h1>
+            <h1>{esc(SITE_TITLE)}</h1>
             <p class="hero-lead">{esc(SITE_TAGLINE)}</p>
             <div class="hero-actions">
               <a class="btn btn-primary" href="{esc(first)}">Start module 01 {icon("arrow-right")}</a>
               <a class="btn" href="overview/#quickstart">Set up the lab</a>
-              <a class="btn btn-ghost" href="https://codespaces.new/{REPO}" rel="noopener">Open in Codespaces</a>
             </div>
+            <p class="hero-facts">{len(modules)} modules &middot; about {total_h:g} hours &middot; free and
+              MIT licensed</p>
           </div>
           {hero_terminal()}
         </section>
-        <ul class="stats" aria-label="Course at a glance">{stats_html}</ul>
 
-        <section class="band features" aria-labelledby="how-h">
-          <p class="eyebrow">How it works</p>
-          <h2 id="how-h">Every technique, from both sides</h2>
-          <div class="feature-grid">
-            <article class="feature"><p class="feature-k">01 &middot; command</p><h3>Run it</h3>
-              <p>Each technique gives the exact command, tagged by depth from Level 0 to Level 2+.</p></article>
-            <article class="feature"><p class="feature-k">02 &middot; output</p><h3>See what it prints</h3>
-              <p>Real output captured from the lab, so you know when you have got it right.</p></article>
-            <article class="feature"><p class="feature-k">03 &middot; defense</p><h3>Learn the fix</h3>
-              <p>A defensive note on every technique: what it looks like to the blue team and how to stop it.</p>
-            </article>
-          </div>
-        </section>
-
-        <section class="band" aria-labelledby="path-h">
-          <p class="eyebrow">The path</p>
-          <h2 id="path-h">{len(modules)} modules, Level 0 to Level 3</h2>
-          <p class="band-lead">Work through them in order. Modules 01 and 02 have self-grading lab checks
-            that print PASS or FAIL. Mark pages complete and your progress is saved in this browser.</p>
-          <ol class="path">{"".join(path)}</ol>
+        <section class="band" aria-labelledby="course-h">
+          <h2 id="course-h">Course</h2>
+          <p class="band-lead">Take the modules in order. Every technique gives the command, the output it
+            prints in the lab, and how a defender spots or stops it. Modules 01 and 02 end with lab checks
+            that print PASS or FAIL. Pages you mark complete are remembered in this browser.</p>
+          <ol class="modules">{"".join(rows)}</ol>
         </section>
 
         <section class="band" aria-labelledby="lab-h">
-          <p class="eyebrow">The lab</p>
-          <h2 id="lab-h">A private network on your laptop</h2>
-          <p class="band-lead">One command starts a Kali attacker box and deliberately insecure targets on an
-            isolated Docker bridge. Nothing touches the internet or anyone else's systems.</p>
-          <div class="lab">
-            <p class="lab-net"><code>10.77.0.0/24</code> &middot; pentest-lab-net</p>
-            <ul class="lab-hosts">{hosts}</ul>
-          </div>
-          <pre class="lab-cmd"><code><span class="t-prompt">$</span> ./scripts/setup-lab-env.sh
-<span class="t-prompt">$</span> ./scripts/setup-lab-env.sh shell</code></pre>
+          <h2 id="lab-h">Practice lab</h2>
+          <p class="band-lead">Docker Compose starts a Kali attacker and two deliberately insecure targets on
+            an isolated bridge network, <code>10.77.0.0/24</code>. Every example in the course runs against
+            it. No Docker? <a href="https://codespaces.new/{REPO}" rel="noopener">Open the repo in
+            Codespaces</a> and run the same commands there.</p>
+          <div class="table-wrap"><table class="hosts">
+            <thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Service</th>
+              <th scope="col">What it is for</th></tr></thead>
+            <tbody>{hosts}</tbody>
+          </table></div>
+          <pre class="lab-cmd"><code>{lab_cmds}</code></pre>
         </section>
 
         {reference}
 
-        <section class="band safety" aria-labelledby="safety-h">
-          <h2 id="safety-h">Authorized targets only</h2>
-          <p>Using these techniques against systems, networks, or wireless access points you do not own or
-            lack written permission to test is illegal in most jurisdictions. Every example in this course
-            targets the lab, <code>127.0.0.1</code>, or documentation address ranges.</p>
+        <section class="band" aria-labelledby="safety-h">
+          <div class="safety">
+            <h2 id="safety-h">Authorized targets only</h2>
+            <p>Using these techniques against systems, networks, or wireless access points you do not own or
+              lack written permission to test is illegal in most jurisdictions. Every example in this course
+              targets the lab, <code>127.0.0.1</code>, or documentation address ranges.</p>
+          </div>
         </section>
       </div>"""
 
@@ -792,11 +789,9 @@ def build(repo: Path, out: Path, site_src: Path) -> Dict:
     (out / "404.html").write_text(page_html(
         title="Page not found", description="This page does not exist.", url="404.html",
         prefix=base_path, body=f"""<div id="doc" class="markdown notfound">
-        <pre class="terminal-404"><span class="t-prompt">root@attacker:~#</span> cd {{this page}}
-bash: cd: No such file or directory</pre>
         <h1>Page not found</h1>
-        <p>That page doesn't exist (or moved). Try the search box, or
-        <a href="{base_path}">go to the start</a>.</p></div>""", **common),
+        <p>That page doesn't exist or has moved. Try the search box above, or go to the
+        <a href="{base_path}">course home page</a>.</p></div>""", **common),
         encoding="utf-8", newline="\n")
 
     (out / "search-index.json").write_text(json.dumps(search, separators=(",", ":")),

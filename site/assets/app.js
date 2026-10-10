@@ -81,8 +81,10 @@
       ticking = false;
       let current = pairs[0];
       for (const pair of pairs) {
-        if (pair[1].getBoundingClientRect().top <= 110) current = pair; else break;
+        if (pair[1].getBoundingClientRect().top <= window.innerHeight * 0.3) current = pair; else break;
       }
+      // At the very bottom, the last sections can't scroll up far enough: pick the last one.
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) current = pairs[pairs.length - 1];
       tocLinks.forEach((a) => a.classList.toggle("active", current && a === current[0]));
     };
     window.addEventListener("scroll", () => {
@@ -97,11 +99,10 @@
   function renderProgress() {
     const done = new Set(store.get("done", []));
     navLinks.forEach((a) => a.classList.toggle("done", done.has(a.dataset.doc)));
-    document.querySelectorAll(".card[data-section]").forEach((card) => {
-      const links = [...new Set([...card.querySelectorAll("a[href]")].map((a) => a.getAttribute("href")))];
+    document.querySelectorAll(".module[data-section]").forEach((row) => {
+      const links = [...new Set([...row.querySelectorAll("a[href]")].map((a) => a.getAttribute("href")))];
       const n = links.filter((h) => done.has(h)).length;
-      card.classList.toggle("done", links.length > 0 && n === links.length);
-      const label = card.querySelector("[data-progress]");
+      const label = row.querySelector("[data-progress]");
       if (label) {
         label.textContent = n ? (n === links.length ? "complete" : `${n} of ${links.length} done`) : "";
         label.classList.toggle("is-done", n === links.length);
