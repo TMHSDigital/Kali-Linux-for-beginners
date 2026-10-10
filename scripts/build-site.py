@@ -488,7 +488,7 @@ def landing_body(sections: List[Dict], docs_meta: Dict[str, Dict]) -> str:
           <ul class="hero-points">
             <li><strong>Hands-on:</strong> every command comes with expected output and a defensive note.</li>
             <li><strong>Safe practice lab:</strong> Docker targets and a Kali attacker box on a private network.</li>
-            <li><strong>Self-grading:</strong> lab exercises print PASS/FAIL so you know you've got it.</li>
+            <li><strong>Self-grading:</strong> lab checks print PASS/FAIL so you know you've got it.</li>
           </ul>
         </section>
         <section aria-labelledby="modules-h">

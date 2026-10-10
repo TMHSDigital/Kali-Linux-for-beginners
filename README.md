@@ -1,16 +1,31 @@
 # Kali Linux for Beginners
 
 [![CI](https://github.com/TMHSDigital/Kali-Linux-for-beginners/actions/workflows/ci.yml/badge.svg)](https://github.com/TMHSDigital/Kali-Linux-for-beginners/actions/workflows/ci.yml)
+[![Docs site](https://img.shields.io/badge/docs-site-2ea44f)](https://tmhsdigital.github.io/Kali-Linux-for-beginners/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Last commit](https://img.shields.io/github/last-commit/TMHSDigital/Kali-Linux-for-beginners)](https://github.com/TMHSDigital/Kali-Linux-for-beginners/commits/main)
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/TMHSDigital/Kali-Linux-for-beginners)
 
-A hands-on Kali Linux and ethical-hacking curriculum that goes from beginner
-shell skills through system administration, network reconnaissance, wireless
-security, and packet analysis. It is based on the concepts in freeCodeCamp's
-*Hands-On Cybersecurity and Ethical Hacking* by Sunny Malu, organized into
-modules with commands, expected output, defensive notes, and a Docker lab of
-safe practice targets.
+**Learn Kali by doing.** A free, self-paced path from your first shell command
+to pulling a password out of captured network traffic, with a safe practice lab
+that runs on your own laptop.
 
-Documentation site: https://tmhsdigital.github.io/Kali-Linux-for-beginners/
+- **A real lab, not screenshots.** One command starts a Kali attacker box and
+  deliberately insecure targets on a private Docker network. Scan them, sniff
+  them, log in to them.
+- **Every technique shows the command, its real output, and the defense.** You
+  learn what an attack looks like from both sides.
+- **Offline and account-free.** No sign-ups, no VPN, no time limits. Clone it,
+  or open it in Codespaces with nothing installed.
+
+Read it on the [documentation site](https://tmhsdigital.github.io/Kali-Linux-for-beginners/),
+which adds search and progress tracking, or right here on GitHub.
+
+[![The documentation site's landing page](site/assets/screenshot.png)](https://tmhsdigital.github.io/Kali-Linux-for-beginners/)
+
+| Who it's for | What you need | How long it takes |
+|---|---|---|
+| Complete beginners to Linux and security, and anyone who wants a hands-on refresher | A laptop with 8 GB RAM and Docker (or a free GitHub account for Codespaces). No prior Linux needed. A Wi-Fi adapter only for module 04's live work. | About 18 hours across five modules, at your own pace |
 
 > **For education and authorized testing only.** Using these techniques against
 > systems, networks, or wireless access points you do not own or lack written
@@ -64,20 +79,37 @@ quota, and it's worth stopping the codespace when you're done.
 
 Four levels across five modules. Each links to its full write-up.
 
-| Level | Module | Outcome |
-|-------|--------|---------|
-| 0, Fundamentals | [01. Terminal & Linux Core](01-terminal-and-linux-core/) | Navigate, inspect, and manipulate Linux from the shell; pipes and redirection |
-| 1, Administration | [02. System Admin & Privileges](02-system-admin-and-privileges/) | Read the Unix privilege model; audit SUID and sudo for escalation surface |
-| 2, Recon | [03. Network Recon & Nmap](03-network-recon-and-nmap/) | Map a network and choose the right scan for stealth, speed, or depth |
-| 2, Wireless | [04. Wireless Security & Aircrack-ng](04-wireless-security-aircrack/) | Capture and crack a WPA2 handshake in a lab; understand WPA3 and PMF defenses |
-| 3, Forensics | [05. Packet Analysis & Wireshark](05-packet-analysis-wireshark/) | Reassemble sessions, extract cleartext credentials, and describe the fix |
+| Level | Module | Time | Outcome |
+|-------|--------|------|---------|
+| 0, Fundamentals | [01. Terminal & Linux Core](01-terminal-and-linux-core/) | ~3 h | Navigate, inspect, and manipulate Linux from the shell; pipes and redirection |
+| 1, Administration | [02. System Admin & Privileges](02-system-admin-and-privileges/) | ~4 h | Read the Unix privilege model; audit SUID and sudo for escalation surface |
+| 2, Recon | [03. Network Recon & Nmap](03-network-recon-and-nmap/) | ~4 h | Map a network and choose the right scan for stealth, speed, or depth |
+| 2, Wireless | [04. Wireless Security & Aircrack-ng](04-wireless-security-aircrack/) | ~4 h | Capture and crack a WPA2 handshake in a lab; understand WPA3 and PMF defenses |
+| 3, Forensics | [05. Packet Analysis & Wireshark](05-packet-analysis-wireshark/) | ~3 h | Reassemble sessions, extract cleartext credentials, and describe the fix |
 
 Commands are tagged by depth so you can find your level:
 `[Level 0: Fundamental]`, `[Level 1: Intermediate]`, `[Level 2+: Advanced / Field Ops]`.
 
 If you are new, start at [module 01](01-terminal-and-linux-core/), do its lab
-exercises (they self-grade), then continue in order. Keep the
+exercises (modules 01 and 02 have self-grading checks that print PASS/FAIL),
+then continue in order. Keep the
 [cheatsheets](cheatsheets/) open alongside the modules.
+
+## How this compares
+
+This project is meant to complement platforms like TryHackMe and Hack The Box
+Academy, not replace them:
+
+| | This project | Hosted platforms |
+|---|---|---|
+| Cost | Free, MIT licensed | Free tiers, paid for most content |
+| Account / VPN | None | Account, often a VPN connection |
+| Where the lab runs | Your machine or your Codespace, works offline | Their cloud |
+| Defensive notes | On every technique | Varies by room or course |
+| Depth | Beginner foundations | Beginner to advanced |
+
+A good route is to work through these modules first, then move to a hosted
+platform for more targets.
 
 ## Quick reference
 
@@ -141,9 +173,10 @@ Kali-Linux-for-beginners/
 │   ├── setup-lab-env.sh              # Guarded lab launcher
 │   ├── parse-nmap-xml.py             # Nmap XML to terminal table
 │   └── build-site.py                 # Generates the docs site from the repo
-├── site/                             # Docs site source (static, no build tools)
+├── site/                             # Docs site assets (CSS, JS, service worker)
+├── tests/                            # pytest for the scripts, lab smoke test
 ├── docker-compose.yml                # Practice lab (attacker + targets)
-└── .github/workflows/pages.yml       # Deploys the docs site
+└── .github/workflows/ci.yml          # Lint, tests, lab smoke test, site deploy
 ```
 
 Turn an Nmap scan into a readable table:
@@ -188,7 +221,14 @@ To publish, set the repository's Pages source to GitHub Actions
 Content is Markdown under the module and `cheatsheets/` directories. Because the
 site is generated from the file tree, adding a `NN-topic/` folder with a
 `README.md` (its first heading becomes the navigation title) is all that is
-required; the site and navigation update on the next push.
+required; the site and navigation update on the next push. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the content rules and local checks.
+
+## Credits
+
+The curriculum follows the concepts in freeCodeCamp's *Hands-On Cybersecurity
+and Ethical Hacking* by Sunny Malu, reorganized into modules with a practice
+lab, expected output, and defensive notes.
 
 ## License
 
