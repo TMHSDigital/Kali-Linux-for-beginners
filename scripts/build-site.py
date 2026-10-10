@@ -67,6 +67,12 @@ EXCLUDE_FILES = {"CLAUDE.md", "CLAUDE.local.md", "AGENTS.md", "CODE_OF_CONDUCT.m
 H1_RE = re.compile(r"^\s*#\s+(.+?)\s*$", re.MULTILINE)
 LEVEL_RE = re.compile(r"\s*`\[(Level[^\]]*)\]`\s*$")
 TIME_RE = re.compile(r"<!--\s*time:\s*(.+?)\s*-->")
+# The practice lab from docker-compose.yml, shown on the landing page.
+LAB_HOSTS = [
+    ("attacker", "10.77.0.5", "Kali toolbox", "nmap, tshark, tcpdump, ftp, curl. You run every module from here."),
+    ("web-target", "10.77.0.10", "nginx, plain HTTP", "A login form that sends credentials in cleartext."),
+    ("ftp-service", "10.77.0.20", "vsftpd", "Anonymous and labuser/labpass logins, all cleartext."),
+]
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; "
        "img-src 'self' data: https:; connect-src 'self'; font-src 'self'; "
        "object-src 'none'; base-uri 'self'; form-action 'none'")
@@ -268,6 +274,7 @@ class Renderer:
         tokens = self.md.parse(text)
         seen: Dict[str, int] = {}
         headings: List[Dict] = []
+        toc: List[Dict] = []
         description = ""
         for i, tok in enumerate(tokens):
             if tok.type == "heading_open":
@@ -286,6 +293,8 @@ class Renderer:
                         kids[-1].content = kids[-1].content.rstrip()
                 if tok.tag != "h1":
                     headings.append({"id": slug, "text": text_only.strip()})
+                    toc.append({"id": slug, "depth": int(tok.tag[1]),
+                                "text": LEVEL_TAG_RE.sub("", text_only).strip()})
                     anchor = Token("html_inline", "", 0)
                     anchor.content = (f'<a class="anchor" href="#{slug}" '
                                       f'aria-label="Link to this section">#</a>')
@@ -309,14 +318,60 @@ class Renderer:
         body = self.md.renderer.render(tokens, self.md.options, {})
         # Table alignment comes out as inline styles; the CSP forbids those.
         body = re.sub(r' style="text-align:(left|center|right)"', r' class="align-\1"', body)
-        plain = re.sub(r'<a class="anchor"[^>]*>#</a>', "", body)
+        plain = re.sub(r'<a class="anchor"[^>]*>#</a>|\[!(?:NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]', "", body)
         plain = re.sub(r"</(p|li|h[1-6]|td|th|tr|pre|blockquote|div)>|<br\s*/?>", " ", plain)
         plain = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", "", plain))).strip()
         desc = re.sub(r"[`*_\[\]]|\(http[^)]*\)", "", description)
         desc = re.sub(r"\s+", " ", desc).strip()
         if len(desc) > 160:
             desc = desc[:157].rsplit(" ", 1)[0] + "..."
-        return {"html": body, "headings": headings, "text": plain, "description": desc}
+        body = PRE_RE.sub(frame_code, body)
+        body = body.replace("<table>", '<div class="table-wrap"><table>').replace("</table>", "</table></div>")
+        # GitHub alert syntax ("> [!WARNING]") becomes a styled callout.
+        body = ALERT_RE.sub(lambda m: f'<blockquote class="callout callout-{alert_kind(m.group(1))}">\n<p>', body)
+        body = CALLOUT_RE.sub(lambda m: f'<blockquote class="callout callout-{callout_kind(m.group(1))}">'
+                                        f'\n<p><strong>{m.group(1)}', body)
+        return {"html": body, "headings": headings, "toc": toc, "text": plain, "description": desc,
+                "minutes": reading_minutes(plain)}
+
+
+PRE_RE = re.compile(r"<pre( class=\"highlight\")?><code(?: class=\"language-([^\"]+)\")?>.*?</code></pre>", re.S)
+LEVEL_TAG_RE = re.compile(r"\s*\[Level[^\]]*\]")
+ALERT_RE = re.compile(r"<blockquote>\n<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*")
+CALLOUT_RE = re.compile(r"<blockquote>\n<p><strong>([^<]+)")
+WARN_WORDS = ("legal", "authori", "warning", "sensitive", "trap", "education")
+
+
+def frame_code(m: re.Match) -> str:
+    """Wrap a code block in a terminal-window frame (the copy button is added by app.js)."""
+    lang = m.group(2) or "text"
+    return (f'<div class="codeblock" data-lang="{lang}"><div class="codeblock-bar">'
+            f'<span class="codeblock-dots" aria-hidden="true"></span>'
+            f'<span class="codeblock-lang">{lang}</span></div>{m.group(0)}</div>')
+
+
+def alert_kind(kind: str) -> str:
+    return "warn" if kind in ("WARNING", "CAUTION", "IMPORTANT") else "note"
+
+
+def callout_kind(label: str) -> str:
+    return "warn" if any(w in label.lower() for w in WARN_WORDS) else "note"
+
+
+def reading_minutes(plain: str) -> int:
+    """Rough reading time; command-heavy pages read slower than prose, so 180 wpm."""
+    return max(1, round(len(plain.split()) / 180))
+
+
+def level_num(level: str) -> str:
+    """'Level 2: Reconnaissance' -> '2' (used to colour-code the path)."""
+    m = re.search(r"Level\s+(\d)", level or "")
+    return m.group(1) if m else ""
+
+
+def hours(time: str) -> float:
+    m = re.search(r"(\d+(?:\.\d+)?)", time or "")
+    return float(m.group(1)) if m else 0.0
 
 
 # --------------------------------------------------------------------------- #
@@ -324,6 +379,33 @@ class Renderer:
 # --------------------------------------------------------------------------- #
 def esc(s: str) -> str:
     return html.escape(s, quote=True)
+
+
+ICONS = {
+    "menu": '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    "sun": ('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4'
+            'M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+    "moon": '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+    "search": '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    "github": ('<path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 '
+               '0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 '
+               '3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/>'),
+    "arrow-right": '<path d="M5 12h14M13 6l6 6-6 6"/>',
+    "arrow-left": '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+    "check": '<path d="m5 12 5 5L20 7"/>',
+    "edit": '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    "issue": '<circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/>',
+}
+
+
+def icon(name: str, cls: str = "icon") -> str:
+    return (f'<svg class="{cls}" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" '
+            f'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+            f'{ICONS[name]}</svg>')
+
+
+def section_level(sec: Dict) -> str:
+    return level_num(sec["items"][0]["level"]) if sec["items"] else ""
 
 
 def nav_html(sections: List[Dict], current_url: str) -> str:
@@ -337,14 +419,27 @@ def nav_html(sections: List[Dict], current_url: str) -> str:
                 + (' class="active" aria-current="page"' if active else "")
                 + f'><span class="done-mark" aria-hidden="true"></span>{esc(it["title"])}</a></li>'
             )
-        out.append(f'<div class="nav-section"><h3>{esc(sec["title"])}</h3>'
+        lvl = section_level(sec)
+        attr = f' data-level="{lvl}"' if lvl else ""
+        out.append(f'<div class="nav-section"{attr}><h3>{esc(sec["title"])}</h3>'
                    f'<ul>{"".join(items)}</ul></div>')
     return "".join(out)
 
 
+def toc_html(headings: List[Dict]) -> str:
+    """Right-hand 'On this page' list (H2s, with H3s indented)."""
+    headings = [h for h in headings if h["depth"] <= 3]
+    if len(headings) < 2:
+        return ""
+    items = "".join(f'<li class="toc-d{h["depth"]}"><a href="#{esc(h["id"])}">{esc(h["text"])}</a></li>'
+                    for h in headings[:48])
+    return (f'<aside class="toc" aria-labelledby="toc-h"><p id="toc-h" class="toc-title">On this page</p>'
+            f'<ol>{items}</ol></aside>')
+
+
 def page_html(*, title: str, description: str, url: str, body: str, sections: List[Dict],
               extra_head: str = "", doc_url: Optional[str] = None, prefix: Optional[str] = None,
-              generated: str = "", total_docs: int = 0) -> str:
+              generated: str = "", total_docs: int = 0, toc: str = "", page_class: str = "page-doc") -> str:
     p = prefix if prefix is not None else root_prefix(url)
     full_title = SITE_TITLE if title == SITE_TITLE else f"{title} | {SITE_TITLE}"
     canonical = SITE_URL + url
@@ -367,137 +462,273 @@ def page_html(*, title: str, description: str, url: str, body: str, sections: Li
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="theme-color" content="#0d1117">
+  <meta name="theme-color" content="#0a0d12">
   <link rel="icon" href="{p}assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="{p}assets/styles.css">
   <link rel="stylesheet" href="{p}assets/pygments.css">
   <script src="{p}assets/theme-init.js"></script>
   {extra_head}
 </head>
-<body data-root="{p}"{data_doc}>
+<body class="{page_class}" data-root="{p}"{data_doc}>
   <a class="skip-link" href="#doc">Skip to content</a>
   <header class="topbar">
-    <button id="menu-toggle" class="icon-btn" type="button" aria-label="Toggle navigation"
-            aria-expanded="false" aria-controls="sidebar">&#8801;</button>
+    <button id="menu-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation"
+            aria-expanded="false" aria-controls="sidebar">{icon("menu")}</button>
     <a class="brand" href="{p}">
-      <span class="brand-mark" aria-hidden="true">$_</span>
-      <span class="brand-text"><strong>{esc(SITE_TITLE)}</strong></span>
+      <span class="brand-mark" aria-hidden="true">&gt;_</span>
+      <span class="brand-text">{esc(SITE_TITLE)}</span>
     </a>
-    <div class="topbar-spacer"></div>
     <div class="search-wrap">
-      <input id="search" type="search" placeholder="Search commands and docs (press /)"
+      {icon("search", "icon search-icon")}
+      <input id="search" type="search" placeholder="Search commands, flags, docs"
              autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list"
              aria-controls="search-results" aria-label="Search documentation">
+      <kbd class="search-kbd" aria-hidden="true">/</kbd>
       <ul id="search-results" class="search-results" role="listbox" hidden></ul>
       <p id="search-status" class="visually-hidden" aria-live="polite"></p>
     </div>
-    <button id="theme-toggle" class="icon-btn" type="button" aria-label="Toggle light/dark theme">&#9680;</button>
+    <nav class="topnav" aria-label="Site">
+      <a href="{p}{esc(first_module_url(sections))}">Course</a>
+      <a href="{p}{esc(section_url(sections, "cheatsheets"))}">Cheatsheets</a>
+      <a href="{p}overview/#quickstart">Lab</a>
+    </nav>
+    <button id="theme-toggle" class="icon-btn" type="button" aria-label="Toggle light/dark theme"
+            title="Toggle theme">{icon("sun", "icon icon-sun")}{icon("moon", "icon icon-moon")}</button>
     <a class="icon-btn" href="https://github.com/{REPO}" rel="noopener" aria-label="View on GitHub"
-       title="View on GitHub">&#8599;</a>
+       title="View on GitHub">{icon("github")}</a>
   </header>
   <div class="layout">
     <nav id="sidebar" class="sidebar" aria-label="Documentation navigation">
       <div class="progress-wrap" hidden>
-        <div class="progress-label"><span id="progress-text"></span></div>
+        <div class="progress-label"><span id="progress-text"></span>
+          <button id="progress-reset" class="link-btn" type="button">Reset</button></div>
         <div class="progress-bar"><span id="progress-fill"></span></div>
       </div>
       <div class="nav-tree">{nav_html(sections, url)}</div>
-      <p class="nav-meta muted">{total_docs} documents &middot; built {esc(generated[:10])}</p>
+      <p class="nav-meta">{total_docs} documents &middot; built {esc(generated[:10])}</p>
     </nav>
     <div id="scrim" class="scrim" hidden></div>
     <main class="content">
       {body}
     </main>
+    {toc}
   </div>
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p class="footer-brand"><span class="brand-mark" aria-hidden="true">&gt;_</span> {esc(SITE_TITLE)}</p>
+      <p class="footer-legal">For education and authorized testing only. Practice on the lab, on
+        systems you own, or with written permission.</p>
+      <p class="footer-links">
+        <a href="https://github.com/{REPO}" rel="noopener">GitHub</a>
+        <a href="https://github.com/{REPO}/blob/{BRANCH}/LICENSE" rel="noopener">MIT License</a>
+        <a href="https://github.com/{REPO}/blob/{BRANCH}/CHANGELOG.md" rel="noopener">Changelog</a>
+        <a href="https://github.com/{REPO}/discussions" rel="noopener">Discussions</a>
+      </p>
+      <p class="footer-credit">Built by <a href="https://github.com/TMHSDigital" rel="noopener">TMHSDigital</a></p>
+    </div>
+  </footer>
   <script src="{p}assets/app.js"></script>
 </body>
 </html>
 """
 
 
+def section_url(sections: List[Dict], sec_id: str) -> str:
+    sec = next((s for s in sections if s["id"] == sec_id and s["items"]), None)
+    return sec["items"][0]["url"] if sec else "overview/"
+
+
+def first_module_url(sections: List[Dict]) -> str:
+    modules = [s for s in sections if re.match(r"^\d", s["id"])]
+    return modules[0]["items"][0]["url"] if modules else "overview/"
+
+
 def doc_body(entry: Dict, rendered: Dict, prev: Optional[Dict], nxt: Optional[Dict]) -> str:
     url = entry["url"]
-    badges = ""
-    if entry["level"] or entry["time"]:
-        b = []
-        if entry["level"]:
-            b.append(f'<span class="badge">{esc(entry["level"])}</span>')
-        if entry["time"]:
-            b.append(f'<span class="badge badge-time">{esc(entry["time"])}</span>')
-        badges = f'<div class="doc-badges">{"".join(b)}</div>'
+    b = []
+    if entry["level"]:
+        b.append(f'<span class="badge">{esc(entry["level"])}</span>')
+    if entry["time"]:
+        b.append(f'<span class="badge badge-time">{esc(entry["time"])}</span>')
+    b.append(f'<span class="badge badge-read">{rendered.get("minutes", 1)} min read</span>')
+    lvl = level_num(entry["level"])
+    lvl_attr = f' data-level="{lvl}"' if lvl else ""
+    meta = f'<div class="doc-badges"{lvl_attr}>{"".join(b)}</div>'
+    crumbs = (f'<nav class="crumbs" aria-label="Breadcrumb"><a href="{esc(root_prefix(url))}">Home</a>'
+              f'<span aria-hidden="true">/</span><span>{esc(entry.get("section", ""))}</span></nav>')
     pager = []
     if prev:
         pager.append(f'<a class="pager-btn" rel="prev" href="{esc(rel_href(url, prev["url"]))}">'
-                     f'<small>&larr; Previous</small><span>{esc(prev["title"])}</span></a>')
+                     f'<small>{icon("arrow-left")} Previous</small><span>{esc(prev["title"])}</span>'
+                     f'<em>{esc(prev.get("section", ""))}</em></a>')
     else:
         pager.append('<span></span>')
     if nxt:
         pager.append(f'<a class="pager-btn pager-next" rel="next" href="{esc(rel_href(url, nxt["url"]))}">'
-                     f'<small>Next &rarr;</small><span>{esc(nxt["title"])}</span></a>')
-    return f"""<article id="doc" class="markdown">
-        {badges}
+                     f'<small>Next {icon("arrow-right")}</small><span>{esc(nxt["title"])}</span>'
+                     f'<em>{esc(nxt.get("section", ""))}</em></a>')
+    issue = f"https://github.com/{REPO}/issues/new?title=" + esc(f"Docs: {entry['title']}").replace(" ", "+")
+    return f"""{crumbs}
+      <article id="doc" class="markdown">
+        {meta}
         {rendered["html"]}
       </article>
       <div class="doc-actions">
         <button id="mark-done" class="done-btn" type="button" aria-pressed="false">Mark as complete</button>
+        <span class="doc-actions-links">
+          <a href="https://github.com/{REPO}/blob/{BRANCH}/{esc(entry["path"])}"
+             rel="noopener">{icon("edit")} Edit this page</a>
+          <a href="{issue}" rel="noopener">{icon("issue")} Report a problem</a>
+        </span>
       </div>
-      <nav class="pager" aria-label="Previous and next document">{"".join(pager)}</nav>
-      <footer class="doc-footer">
-        <a href="https://github.com/{REPO}/blob/{BRANCH}/{esc(entry["path"])}"
-           rel="noopener">Edit this page on GitHub &#8599;</a>
-      </footer>"""
+      <nav class="pager" aria-label="Previous and next document">{"".join(pager)}</nav>"""
+
+
+HERO_SESSION = [
+    ("prompt", "nmap 10.77.0.10 10.77.0.20"),
+    ("out", "Nmap scan report for web-target.pentest-lab-net (10.77.0.10)"),
+    ("out", "PORT   STATE SERVICE"),
+    ("hit", "80/tcp open  http"),
+    ("out", ""),
+    ("out", "Nmap scan report for ftp-service.pentest-lab-net (10.77.0.20)"),
+    ("out", "PORT   STATE SERVICE"),
+    ("hit", "21/tcp open  ftp"),
+    ("out", ""),
+    ("dim", "Nmap done: 2 IP addresses (2 hosts up) scanned in 0.19 seconds"),
+    ("comment", "# next: catch the FTP login in cleartext (module 05)"),
+    ("cursor", ""),
+]
+
+
+def hero_terminal() -> str:
+    lines = []
+    for kind, text in HERO_SESSION:
+        if kind == "prompt":
+            lines.append(f'<span class="t-prompt">root@attacker:~#</span> <span class="t-cmd">{esc(text)}</span>')
+        elif kind == "cursor":
+            lines.append('<span class="t-prompt">root@attacker:~#</span> <span class="t-cursor"></span>')
+        else:
+            lines.append(f'<span class="t-{kind}">{esc(text)}</span>')
+    return f"""<div class="terminal" role="img" aria-label="A real nmap scan of the practice lab">
+            <div class="terminal-bar"><span class="codeblock-dots" aria-hidden="true"></span>
+              <span class="terminal-title">root@attacker (10.77.0.5)</span></div>
+            <pre class="terminal-body">{chr(10).join(lines)}</pre>
+          </div>"""
 
 
 def landing_body(sections: List[Dict], docs_meta: Dict[str, Dict]) -> str:
     modules = [s for s in sections if re.match(r"^\d", s["id"])]
     others = [s for s in sections if s["id"] != "home" and not re.match(r"^\d", s["id"])]
-    first = modules[0]["items"][0]["url"] if modules else "overview/"
-    cards = []
+    first = first_module_url(sections)
+    total_h = sum(hours(s["items"][0]["time"]) for s in modules)
+    sheets = next((len(s["items"]) for s in sections if s["id"] == "cheatsheets"), 0)
+    stats = [(str(len(modules)), "modules"), (f"~{total_h:g} h", "of guided work"),
+             (str(sheets), "cheatsheets"), (str(len(LAB_HOSTS)), "lab hosts on 10.77.0.0/24")]
+    stats_html = "".join(f'<li><strong>{esc(v)}</strong><span>{esc(k)}</span></li>' for v, k in stats)
+
+    path = []
     for sec in modules:
         lead = sec["items"][0]
         meta = docs_meta.get(lead["path"], {})
-        badges = "".join(
-            f'<span class="badge{cls}">{esc(v)}</span>'
-            for v, cls in ((lead["level"], ""), (lead["time"], " badge-time")) if v)
+        lvl = level_num(lead["level"])
+        label = lead["level"].split(":", 1)[-1].strip() if lead["level"] else ""
+        num = sec["id"].split("-", 1)[0]
+        name = sec["title"].split(". ", 1)[-1]
+        badges = f'<span class="badge badge-time">{esc(lead["time"])}</span>' if lead["time"] else ""
         extra = "".join(f'<li><a href="{esc(it["url"])}">{esc(it["title"])}</a></li>'
                         for it in sec["items"][1:])
-        cards.append(f"""<article class="card" data-section="{esc(sec["id"])}">
-          <h3><a href="{esc(lead["url"])}">{esc(sec["title"])}</a></h3>
-          <div class="card-badges">{badges}</div>
-          <p>{esc(meta.get("description", ""))}</p>
-          {f'<ul class="card-links">{extra}</ul>' if extra else ""}
-        </article>""")
+        path.append(f"""<li class="path-step" data-level="{lvl}">
+            <span class="path-node" aria-hidden="true">{esc(num)}</span>
+            <article class="card path-card" data-section="{esc(sec["id"])}">
+              <p class="path-level">L{esc(lvl)} &middot; {esc(label)}</p>
+              <h3><a href="{esc(lead["url"])}">{esc(name)}</a></h3>
+              <p>{esc(meta.get("description", ""))}</p>
+              <div class="card-foot">
+                <div class="card-badges">{badges}</div>
+                <span class="card-progress" data-progress></span>
+              </div>
+              <a class="card-link" href="{esc(lead["url"])}">Open module</a>
+              {f'<ul class="card-links">{extra}</ul>' if extra else ""}
+            </article>
+          </li>""")
+
+    hosts = "".join(f"""<li class="host host-{esc(name)}">
+              <p class="host-name">{esc(name)}</p>
+              <p class="host-ip">{esc(ip)}</p>
+              <p class="host-role">{esc(role)}</p>
+              <p class="host-desc">{esc(desc)}</p>
+            </li>""" for name, ip, role, desc in LAB_HOSTS)
+
     other_cards = []
     for sec in others:
         links = "".join(f'<li><a href="{esc(it["url"])}">{esc(it["title"])}</a></li>'
                         for it in sec["items"])
-        other_cards.append(f'<article class="card"><h3>{esc(sec["title"])}</h3>'
+        other_cards.append(f'<article class="card ref-card"><h3>{esc(sec["title"])}</h3>'
                            f'<ul class="card-links">{links}</ul></article>')
-    reference = (f'<section aria-labelledby="ref-h"><h2 id="ref-h">Reference</h2>'
+    reference = (f'<section class="band" aria-labelledby="ref-h"><p class="eyebrow">Keep these open</p>'
+                 f'<h2 id="ref-h">Reference</h2>'
                  f'<div class="card-grid">{"".join(other_cards)}</div></section>') if other_cards else ""
+
     return f"""<div id="doc" class="landing">
         <section class="hero">
-          <p class="hero-kicker">Free &middot; self-paced &middot; no account needed</p>
-          <h1>Learn Kali Linux by doing</h1>
-          <p class="hero-lead">{esc(SITE_TAGLINE)}</p>
-          <div class="hero-actions">
-            <a class="btn btn-primary" href="{esc(first)}">Start module 01</a>
-            <a class="btn" href="overview/">Set up the lab</a>
-            <a class="btn" href="https://codespaces.new/{REPO}" rel="noopener">Open in Codespaces</a>
+          <div class="hero-copy">
+            <p class="eyebrow"><span class="pulse" aria-hidden="true"></span>Free &middot; self-paced &middot;
+              no account, no VPN</p>
+            <h1>Learn Kali Linux by <span class="accent">doing</span>.</h1>
+            <p class="hero-lead">{esc(SITE_TAGLINE)}</p>
+            <div class="hero-actions">
+              <a class="btn btn-primary" href="{esc(first)}">Start module 01 {icon("arrow-right")}</a>
+              <a class="btn" href="overview/#quickstart">Set up the lab</a>
+              <a class="btn btn-ghost" href="https://codespaces.new/{REPO}" rel="noopener">Open in Codespaces</a>
+            </div>
           </div>
-          <ul class="hero-points">
-            <li><strong>Hands-on:</strong> every command comes with expected output and a defensive note.</li>
-            <li><strong>Safe practice lab:</strong> Docker targets and a Kali attacker box on a private network.</li>
-            <li><strong>Self-grading:</strong> lab checks print PASS/FAIL so you know you've got it.</li>
-          </ul>
+          {hero_terminal()}
         </section>
-        <section aria-labelledby="modules-h">
-          <h2 id="modules-h">The path</h2>
-          <div class="card-grid">{"".join(cards)}</div>
+        <ul class="stats" aria-label="Course at a glance">{stats_html}</ul>
+
+        <section class="band features" aria-labelledby="how-h">
+          <p class="eyebrow">How it works</p>
+          <h2 id="how-h">Every technique, from both sides</h2>
+          <div class="feature-grid">
+            <article class="feature"><p class="feature-k">01 &middot; command</p><h3>Run it</h3>
+              <p>Each technique gives the exact command, tagged by depth from Level 0 to Level 2+.</p></article>
+            <article class="feature"><p class="feature-k">02 &middot; output</p><h3>See what it prints</h3>
+              <p>Real output captured from the lab, so you know when you have got it right.</p></article>
+            <article class="feature"><p class="feature-k">03 &middot; defense</p><h3>Learn the fix</h3>
+              <p>A defensive note on every technique: what it looks like to the blue team and how to stop it.</p>
+            </article>
+          </div>
         </section>
+
+        <section class="band" aria-labelledby="path-h">
+          <p class="eyebrow">The path</p>
+          <h2 id="path-h">{len(modules)} modules, Level 0 to Level 3</h2>
+          <p class="band-lead">Work through them in order. Modules 01 and 02 have self-grading lab checks
+            that print PASS or FAIL. Mark pages complete and your progress is saved in this browser.</p>
+          <ol class="path">{"".join(path)}</ol>
+        </section>
+
+        <section class="band" aria-labelledby="lab-h">
+          <p class="eyebrow">The lab</p>
+          <h2 id="lab-h">A private network on your laptop</h2>
+          <p class="band-lead">One command starts a Kali attacker box and deliberately insecure targets on an
+            isolated Docker bridge. Nothing touches the internet or anyone else's systems.</p>
+          <div class="lab">
+            <p class="lab-net"><code>10.77.0.0/24</code> &middot; pentest-lab-net</p>
+            <ul class="lab-hosts">{hosts}</ul>
+          </div>
+          <pre class="lab-cmd"><code><span class="t-prompt">$</span> ./scripts/setup-lab-env.sh
+<span class="t-prompt">$</span> ./scripts/setup-lab-env.sh shell</code></pre>
+        </section>
+
         {reference}
-        <p class="legal muted">For education and authorized testing only. Only use these techniques on
-          systems you own or have written permission to test.</p>
+
+        <section class="band safety" aria-labelledby="safety-h">
+          <h2 id="safety-h">Authorized targets only</h2>
+          <p>Using these techniques against systems, networks, or wireless access points you do not own or
+            lack written permission to test is illegal in most jurisdictions. Every example in this course
+            targets the lab, <code>127.0.0.1</code>, or documentation address ranges.</p>
+        </section>
       </div>"""
 
 
@@ -550,17 +781,20 @@ def build(repo: Path, out: Path, site_src: Path) -> Dict:
         nxt = flat[i + 1] if i + 1 < len(flat) else None
         write(out, it["url"], page_html(
             title=it["title"], description=r["description"] or SITE_TAGLINE, url=it["url"],
-            body=doc_body(it, r, prev, nxt), doc_url=it["url"], **common))
+            body=doc_body(it, r, prev, nxt), doc_url=it["url"], toc=toc_html(r["toc"]), **common))
         search.append({"url": it["url"], "title": it["title"], "section": it["section"],
                        "headings": r["headings"], "text": r["text"]})
 
     write(out, "", page_html(title=SITE_TITLE, description=SITE_TAGLINE, url="",
-                             body=landing_body(sections, rendered_all), **common))
+                             body=landing_body(sections, rendered_all), page_class="page-landing", **common))
 
     base_path = urlsplit(SITE_URL).path  # 404 is served at any depth: absolute paths
     (out / "404.html").write_text(page_html(
         title="Page not found", description="This page does not exist.", url="404.html",
-        prefix=base_path, body=f"""<div id="doc" class="markdown"><h1>Page not found</h1>
+        prefix=base_path, body=f"""<div id="doc" class="markdown notfound">
+        <pre class="terminal-404"><span class="t-prompt">root@attacker:~#</span> cd {{this page}}
+bash: cd: No such file or directory</pre>
+        <h1>Page not found</h1>
         <p>That page doesn't exist (or moved). Try the search box, or
         <a href="{base_path}">go to the start</a>.</p></div>""", **common),
         encoding="utf-8", newline="\n")

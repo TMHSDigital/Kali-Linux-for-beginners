@@ -146,7 +146,7 @@ Expected shape from profile G-2 via the parser:
 ```text
 Host: 10.77.0.10 (web-target.pentest-lab-net)   Status: up
   PORT   PROTO  STATE  SERVICE  PRODUCT / VERSION
-  80     tcp    open   http     nginx 1.30.5
+  80     tcp    open   http     nginx 1.31.6
 
 Host: 10.77.0.20 (ftp-service.pentest-lab-net)   Status: up
   PORT   PROTO  STATE  SERVICE  PRODUCT / VERSION

@@ -51,21 +51,45 @@
     if (e.key === "Escape" && sidebar.classList.contains("open")) toggleSidebar(false);
   });
 
-  /* ---------------- Copy buttons ---------------- */
-  document.querySelectorAll(".markdown pre").forEach((pre) => {
-    const btn = el("button", { class: "copy-btn", type: "button", text: "Copy",
+  /* ---------------- Copy buttons (in each code block's terminal bar) ---------------- */
+  document.querySelectorAll(".markdown .codeblock").forEach((block) => {
+    const pre = block.querySelector("pre");
+    const bar = block.querySelector(".codeblock-bar");
+    if (!pre || !bar) return;
+    const btn = el("button", { class: "copy-btn", type: "button", text: "copy",
                                "aria-label": "Copy code to clipboard" });
     btn.addEventListener("click", async () => {
       const code = pre.querySelector("code");
       try {
         await navigator.clipboard.writeText((code || pre).innerText);
-        btn.textContent = "Copied!";
+        btn.textContent = "copied";
         btn.classList.add("copied");
-        setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 1500);
-      } catch (_) { btn.textContent = "Press Ctrl-C"; }
+        setTimeout(() => { btn.textContent = "copy"; btn.classList.remove("copied"); }, 1600);
+      } catch (_) { btn.textContent = "press ctrl-c"; }
     });
-    pre.appendChild(btn);
+    bar.appendChild(btn);
   });
+
+  /* ---------------- "On this page" scroll-spy ---------------- */
+  const tocLinks = [...document.querySelectorAll(".toc a[href^='#']")];
+  if (tocLinks.length) {
+    const pairs = tocLinks
+      .map((a) => [a, document.getElementById(decodeURIComponent(a.hash.slice(1)))])
+      .filter(([, h]) => h);
+    let ticking = false;
+    const spy = () => {
+      ticking = false;
+      let current = pairs[0];
+      for (const pair of pairs) {
+        if (pair[1].getBoundingClientRect().top <= 110) current = pair; else break;
+      }
+      tocLinks.forEach((a) => a.classList.toggle("active", current && a === current[0]));
+    };
+    window.addEventListener("scroll", () => {
+      if (!ticking) { ticking = true; requestAnimationFrame(spy); }
+    }, { passive: true });
+    spy();
+  }
 
   /* ---------------- Progress tracking ---------------- */
   const navLinks = [...document.querySelectorAll(".nav-tree a[data-doc]")];
@@ -74,8 +98,14 @@
     const done = new Set(store.get("done", []));
     navLinks.forEach((a) => a.classList.toggle("done", done.has(a.dataset.doc)));
     document.querySelectorAll(".card[data-section]").forEach((card) => {
-      const links = [...card.querySelectorAll("a[href]")].map((a) => a.getAttribute("href"));
-      card.classList.toggle("done", links.length > 0 && links.every((h) => done.has(h)));
+      const links = [...new Set([...card.querySelectorAll("a[href]")].map((a) => a.getAttribute("href")))];
+      const n = links.filter((h) => done.has(h)).length;
+      card.classList.toggle("done", links.length > 0 && n === links.length);
+      const label = card.querySelector("[data-progress]");
+      if (label) {
+        label.textContent = n ? (n === links.length ? "complete" : `${n} of ${links.length} done`) : "";
+        label.classList.toggle("is-done", n === links.length);
+      }
     });
     const count = allDocs.filter((d) => done.has(d)).length;
     const wrap = $(".progress-wrap");
@@ -88,8 +118,14 @@
     if (btn) {
       const isDone = done.has(DOC);
       btn.setAttribute("aria-pressed", String(isDone));
-      btn.textContent = isDone ? "Completed ✓ (undo)" : "Mark as complete";
+      btn.textContent = isDone ? "Completed (undo)" : "Mark as complete";
     }
+  }
+  const resetBtn = $("#progress-reset");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      if (window.confirm("Clear your progress in this browser?")) { store.set("done", []); renderProgress(); }
+    });
   }
   const markBtn = $("#mark-done");
   if (markBtn && DOC) {
@@ -214,7 +250,9 @@
   document.addEventListener("click", (e) => { if (!e.target.closest(".search-wrap")) close(); });
   document.addEventListener("keydown", (e) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
-    if (e.key === "/" && !typing) { e.preventDefault(); input.focus(); }
+    if ((e.key === "/" && !typing) || (e.key.toLowerCase() === "k" && (e.ctrlKey || e.metaKey))) {
+      e.preventDefault(); input.focus(); input.select();
+    }
   });
 
   /* ---------------- Offline support ---------------- */

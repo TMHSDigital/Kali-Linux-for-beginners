@@ -7,6 +7,20 @@ wording changes are patches.
 
 ## [Unreleased]
 
+### Changed
+- Redesigned the documentation site with an ops-console look: level-colored
+  course path, a hero terminal showing a real lab scan, an "On this page"
+  outline with scroll tracking, terminal-framed code blocks with copy buttons,
+  breadcrumbs, reading-time estimates, GitHub alert callouts, scrollable
+  tables, a site footer, `Ctrl+K` search, and a progress reset. New favicon,
+  social preview image, and README screenshot.
+- Reworked the README: centered header, badges, a real lab scan, a cheatsheet
+  table, folded reference sections, and contributor and security pointers.
+
+### Fixed
+- Module 03 expected `-sV` output now shows the nginx version the lab actually
+  runs (1.31.6) after the base image bump.
+
 ## [1.0.0] - 2026-10-09
 
 First tagged release: five modules, four cheatsheets, a working practice lab,

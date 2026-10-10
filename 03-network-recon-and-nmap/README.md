@@ -161,7 +161,7 @@ Expected `-sV` against the lab web target:
 
 ```text
 PORT   STATE SERVICE VERSION
-80/tcp open  http    nginx 1.30.5
+80/tcp open  http    nginx 1.31.6
 ```
 
 ---
