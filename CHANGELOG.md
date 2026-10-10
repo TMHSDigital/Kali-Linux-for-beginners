@@ -21,7 +21,24 @@ wording changes are patches.
   who the course is for and what you need, a real lab scan, a cheatsheet
   table, folded reference sections, and contributor and security pointers.
 
+### Added
+- Site search links to the section where the match is, not just the page, so
+  a flag that only appears in a code block (`nmap -sS`) lands on the right
+  section. Typing the whole command ranks exact matches first.
+- "Continue module NN" on the home page picks up at the first page you
+  haven't finished.
+- "Mark complete and continue" at the end of each page, and a per-module
+  done count beside each module in the sidebar.
+- An "On this page" outline folded under the title on screens too narrow for
+  the side outline.
+- Back-to-top button on long pages; clicking a heading's `#` copies its link.
+- The 404 page suggests pages whose names match the broken URL.
+
 ### Fixed
+- Links written as a bare filename (`[lab-exercises.md](lab-exercises.md)`)
+  show the page title on the site.
+- The mobile navigation drawer moves focus into itself when opened, returns
+  it to the menu button on Escape, and closes when you pick a page.
 - Module 03 expected `-sV` output now shows the nginx version the lab actually
   runs (1.31.6) after the base image bump.
 

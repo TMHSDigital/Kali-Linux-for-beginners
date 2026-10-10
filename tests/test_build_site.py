@@ -236,3 +236,41 @@ def test_inline_level_tags_become_labels(site_builder, tmp_path):
     site_builder.build(repo, out, REPO_ROOT / "site")
     page = read(out, "overview/index.html")
     assert '<span class="level-tag" data-level="2">Level 2+: Advanced / Field Ops</span>' in page
+
+
+def test_search_index_maps_text_to_sections(built):
+    data = json.loads(read(built[0], "search-index.json"))
+    entry = next(d for d in data if d["url"] == "01-first-module/")
+    starts = dict(entry["parts"])
+    assert list(starts) == ["", "setup", "setup-1"]
+    # The code block lives in the second "Setup" section, so a hit on it can link there.
+    hit = entry["text"].index("nmap -sV 10.77.0.10")
+    assert starts["setup-1"] <= hit
+    assert entry["text"][starts["setup-1"]:].startswith("Setup")
+
+
+def test_doc_page_inline_outline_and_continue_link(built):
+    out, _ = built
+    page = read(out, "01-first-module/index.html")
+    # Folded outline sits right under the title; the side outline is still there for wide screens.
+    assert '</h1>\n<details class="toc-inline"><summary>On this page</summary>' in page
+    assert '<a id="done-next" class="done-next" href="lab-exercises/">' in page
+    # The last page has nothing to continue to.
+    assert 'id="done-next"' not in read(out, "cheatsheets/nmap/index.html")
+
+
+def test_filename_link_text_becomes_page_title(site_builder, tmp_path):
+    repo = tmp_path / "repo"
+    (repo / "01-mod").mkdir(parents=True)
+    (repo / "01-mod" / "README.md").write_text(
+        "# 01: Mod\n\nSee [extra.md](extra.md) and [the extras](extra.md).\n")
+    (repo / "01-mod" / "extra.md").write_text("# Extra Practice\n\nText.\n")
+    out = tmp_path / "_site"
+    site_builder.build(repo, out, REPO_ROOT / "site")
+    page = read(out, "01-mod/index.html")
+    assert '<a href="extra/">Extra Practice</a>' in page
+    assert '<a href="extra/">the extras</a>' in page  # real link text is left alone
+
+
+def test_404_has_suggestion_slot(built):
+    assert '<div id="suggest" hidden>' in read(built[0], "404.html")

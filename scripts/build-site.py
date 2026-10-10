@@ -257,6 +257,13 @@ class Renderer:
         self.docs = docs          # rel md path -> entry
         self.md = make_md()
 
+    def doc_target(self, from_rel: str, href: str) -> Optional[str]:
+        """The published doc a relative Markdown link points at, if any."""
+        if not href or href.startswith(("#", "//")) or urlsplit(href).scheme:
+            return None
+        target = posixpath.normpath(posixpath.join(posixpath.dirname(from_rel), href.partition("#")[0]))
+        return target if target in self.docs else None
+
     def resolve(self, from_rel: str, href: str, from_url: str) -> str:
         """Rewrite a link found in `from_rel` so it works on the site."""
         if not href or href.startswith("#") or urlsplit(href).scheme or href.startswith("//"):
@@ -310,11 +317,20 @@ class Renderer:
             elif tok.type == "paragraph_open" and not description:
                 description = tokens[i + 1].content
             if tok.type == "inline":
-                for child in tok.children or []:
+                kids = tok.children or []
+                for k, child in enumerate(kids):
                     if child.type == "link_open":
                         href = child.attrGet("href") or ""
                         new = self.resolve(rel, href, entry["url"])
                         child.attrSet("href", new)
+                        # "[lab-exercises.md](lab-exercises.md)" reads fine on GitHub but not on the
+                        # site: show the page's title when the link text is just its filename.
+                        label = kids[k + 1] if k + 1 < len(kids) else None
+                        target = self.doc_target(rel, href)
+                        if (target and label is not None and label.type == "text"
+                                and label.content.endswith(".md")
+                                and posixpath.basename(label.content) == posixpath.basename(target)):
+                            label.content = self.docs[target]["title"]
                         if urlsplit(new).scheme in ("http", "https"):
                             child.attrSet("rel", "noopener")
                     elif child.type == "image":
@@ -326,9 +342,18 @@ class Renderer:
         body = self.md.renderer.render(tokens, self.md.options, {})
         # Table alignment comes out as inline styles; the CSP forbids those.
         body = re.sub(r' style="text-align:(left|center|right)"', r' class="align-\1"', body)
-        plain = re.sub(r'<a class="anchor"[^>]*>#</a>|\[!(?:NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]', "", body)
-        plain = re.sub(r"</(p|li|h[1-6]|td|th|tr|pre|blockquote|div)>|<br\s*/?>", " ", plain)
-        plain = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", "", plain))).strip()
+        # Search text, plus where each H2-H6 section starts in it, so a search hit
+        # deep inside a code block can link to its section instead of the page top.
+        plain, parts = "", []
+        for chunk in SECTION_SPLIT_RE.split(body):
+            m = HEADING_ID_RE.match(chunk)
+            chunk_text = plain_text(chunk)
+            if not chunk_text:
+                continue
+            if plain:
+                plain += " "
+            parts.append([m.group(1) if m else "", len(plain)])
+            plain += chunk_text
         desc = re.sub(r"[`*_\[\]]|\(http[^)]*\)", "", description)
         desc = re.sub(r"\s+", " ", desc).strip()
         if len(desc) > 160:
@@ -342,12 +367,22 @@ class Renderer:
         body = ALERT_RE.sub(lambda m: f'<blockquote class="callout callout-{alert_kind(m.group(1))}">\n<p>', body)
         body = CALLOUT_RE.sub(lambda m: f'<blockquote class="callout callout-{callout_kind(m.group(1))}">'
                                         f'\n<p><strong>{m.group(1)}', body)
-        return {"html": body, "headings": headings, "toc": toc, "text": plain, "description": desc}
+        return {"html": body, "headings": headings, "toc": toc, "text": plain, "parts": parts,
+                "description": desc}
 
 
 PRE_RE = re.compile(r"<pre( class=\"highlight\")?><code(?: class=\"language-([^\"]+)\")?>.*?</code></pre>", re.S)
 LEVEL_TAG_RE = re.compile(r"\s*\[Level[^\]]*\]")
 LEVEL_CODE_RE = re.compile(r"<code>\[(Level [^\]<]*)\]</code>")
+SECTION_SPLIT_RE = re.compile(r'(?=<h[2-6] id=")')
+HEADING_ID_RE = re.compile(r'<h[2-6] id="([^"]+)"')
+
+
+def plain_text(fragment: str) -> str:
+    """Rendered HTML -> the single-spaced text the search index holds."""
+    text = re.sub(r'<a class="anchor"[^>]*>#</a>|\[!(?:NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]', "", fragment)
+    text = re.sub(r"</(p|li|h[1-6]|td|th|tr|pre|blockquote|div)>|<br\s*/?>", " ", text)
+    return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", "", text))).strip()
 ALERT_RE = re.compile(r"<blockquote>\n<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*")
 CALLOUT_RE = re.compile(r"<blockquote>\n<p><strong>([^<]+)")
 WARN_WORDS = ("legal", "authori", "warning", "sensitive", "trap", "education")
@@ -454,20 +489,32 @@ def nav_html(sections: List[Dict], current_url: str) -> str:
     return "".join(out)
 
 
-def toc_html(headings: List[Dict]) -> str:
-    """Right-hand 'On this page' list (H2s, with H3s indented)."""
+def toc_items(headings: List[Dict]) -> str:
+    """'On this page' entries (H2s, with H3s indented); empty when there are fewer than two."""
     headings = [h for h in headings if h["depth"] <= 3]
     if len(headings) < 2:
         return ""
-    items = "".join(f'<li class="toc-d{h["depth"]}"><a href="#{esc(h["id"])}">{esc(h["text"])}</a></li>'
-                    for h in headings[:48])
+    return "".join(f'<li class="toc-d{h["depth"]}"><a href="#{esc(h["id"])}">{esc(h["text"])}</a></li>'
+                   for h in headings[:48])
+
+
+def toc_html(headings: List[Dict]) -> str:
+    """Right-hand outline for wide screens."""
+    items = toc_items(headings)
     return (f'<aside class="toc" aria-labelledby="toc-h"><p id="toc-h" class="toc-title">On this page</p>'
-            f'<ol>{items}</ol></aside>')
+            f'<ol>{items}</ol></aside>') if items else ""
+
+
+def toc_inline(headings: List[Dict]) -> str:
+    """The same outline, folded under the page title, for screens too narrow for the side one."""
+    items = toc_items(headings)
+    return (f'<details class="toc-inline"><summary>On this page</summary><ol>{items}</ol></details>\n'
+            if items else "")
 
 
 def page_html(*, title: str, description: str, url: str, body: str, sections: List[Dict],
               extra_head: str = "", doc_url: Optional[str] = None, prefix: Optional[str] = None,
-              generated: str = "", total_docs: int = 0, toc: str = "", page_class: str = "page-doc") -> str:
+              toc: str = "", page_class: str = "page-doc") -> str:
     p = prefix if prefix is not None else root_prefix(url)
     full_title = SITE_TITLE if title == SITE_TITLE else f"{title} | {SITE_TITLE}"
     canonical = SITE_URL + url
@@ -508,7 +555,7 @@ def page_html(*, title: str, description: str, url: str, body: str, sections: Li
     </a>
     <div class="search-wrap">
       {icon("search", "icon search-icon")}
-      <input id="search" type="search" placeholder="Search commands, flags, docs"
+      <input id="search" type="search" placeholder="Search the course"
              autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list"
              aria-controls="search-results" aria-label="Search documentation">
       <kbd class="search-kbd" aria-hidden="true">/</kbd>
@@ -532,9 +579,7 @@ def page_html(*, title: str, description: str, url: str, body: str, sections: Li
           <button id="progress-reset" class="link-btn" type="button">Reset</button></div>
         <div class="progress-bar"><span id="progress-fill"></span></div>
       </div>
-      <div class="nav-tree">{nav_html(sections, url)}</div>
-      <p class="nav-meta">{total_docs} documents &middot; built {esc(generated[:10])}</p>
-    </nav>
+      <div class="nav-tree">{nav_html(sections, url)}</div>    </nav>
     <div id="scrim" class="scrim" hidden></div>
     <main class="content">
       {body}
@@ -595,13 +640,19 @@ def doc_body(entry: Dict, rendered: Dict, prev: Optional[Dict], nxt: Optional[Di
                      f'<small>Next {icon("arrow-right")}</small><span>{esc(nxt["title"])}</span>'
                      f'<em>{esc(nxt.get("section", ""))}</em></a>')
     issue = f"https://github.com/{REPO}/issues/new?title=" + esc(f"Docs: {entry['title']}").replace(" ", "+")
+    article = rendered["html"].replace("</h1>\n", "</h1>\n" + toc_inline(rendered["toc"]), 1)
+    done_next = (f'<a id="done-next" class="done-next" href="{esc(rel_href(url, nxt["url"]))}">'
+                 f'Mark complete and continue {icon("arrow-right")}</a>') if nxt else ""
     return f"""{crumbs}
       <article id="doc" class="markdown">
         {meta}
-        {rendered["html"]}
+        {article}
       </article>
       <div class="doc-actions">
-        <button id="mark-done" class="done-btn" type="button" aria-pressed="false">Mark as complete</button>
+        <span class="doc-actions-main">
+          <button id="mark-done" class="done-btn" type="button" aria-pressed="false">Mark as complete</button>
+          {done_next}
+        </span>
         <span class="doc-actions-links">
           <a href="https://github.com/{REPO}/blob/{BRANCH}/{esc(entry["path"])}"
              rel="noopener">{icon("edit")} Edit this page</a>
@@ -685,7 +736,8 @@ def landing_body(sections: List[Dict], docs_meta: Dict[str, Dict]) -> str:
             <h1>{esc(SITE_TITLE)}</h1>
             <p class="hero-lead">{esc(SITE_TAGLINE)}</p>
             <div class="hero-actions">
-              <a class="btn btn-primary" href="{esc(first)}">Start module 01 {icon("arrow-right")}</a>
+              <a id="start-btn" class="btn btn-primary" href="{esc(first)}"><span>Start module 01</span>
+                {icon("arrow-right")}</a>
               <a class="btn" href="overview/#quickstart">Set up the lab</a>
             </div>
             <p class="hero-facts">{len(modules)} modules &middot; about {total_h:g} hours &middot; free and
@@ -765,7 +817,7 @@ def build(repo: Path, out: Path, site_src: Path) -> Dict:
     docs = {it["path"]: it for it in flat}
     renderer = Renderer(repo, docs)
     generated = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    common = {"sections": sections, "generated": generated, "total_docs": len(flat)}
+    common = {"sections": sections}
 
     rendered_all: Dict[str, Dict] = {}
     for it in flat:
@@ -780,7 +832,7 @@ def build(repo: Path, out: Path, site_src: Path) -> Dict:
             title=it["title"], description=r["description"] or SITE_TAGLINE, url=it["url"],
             body=doc_body(it, r, prev, nxt), doc_url=it["url"], toc=toc_html(r["toc"]), **common))
         search.append({"url": it["url"], "title": it["title"], "section": it["section"],
-                       "headings": r["headings"], "text": r["text"]})
+                       "headings": r["headings"], "text": r["text"], "parts": r["parts"]})
 
     write(out, "", page_html(title=SITE_TITLE, description=SITE_TAGLINE, url="",
                              body=landing_body(sections, rendered_all), page_class="page-landing", **common))
@@ -791,7 +843,8 @@ def build(repo: Path, out: Path, site_src: Path) -> Dict:
         prefix=base_path, body=f"""<div id="doc" class="markdown notfound">
         <h1>Page not found</h1>
         <p>That page doesn't exist or has moved. Try the search box above, or go to the
-        <a href="{base_path}">course home page</a>.</p></div>""", **common),
+        <a href="{base_path}">course home page</a>.</p>
+        <div id="suggest" hidden><h2>Pages with similar names</h2><ul></ul></div></div>""", **common),
         encoding="utf-8", newline="\n")
 
     (out / "search-index.json").write_text(json.dumps(search, separators=(",", ":")),
