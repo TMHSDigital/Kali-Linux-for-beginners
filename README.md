@@ -95,6 +95,12 @@ exercises (modules 01 and 02 have self-grading checks that print PASS/FAIL),
 then continue in order. Keep the
 [cheatsheets](cheatsheets/) open alongside the modules.
 
+Running it for a class or club? See
+[Teaching with this course](guides/teaching-with-this-course.md) for lab
+options, a six-session schedule, and how to handle the wireless module safely.
+Questions and show-and-tell go in
+[Discussions](https://github.com/TMHSDigital/Kali-Linux-for-beginners/discussions).
+
 ## How this compares
 
 This project is meant to complement platforms like TryHackMe and Hack The Box
@@ -168,6 +174,7 @@ Kali-Linux-for-beginners/
 ├── 04-wireless-security-aircrack/    # Level 2
 ├── 05-packet-analysis-wireshark/     # Level 3
 ├── cheatsheets/                      # Quick reference
+├── guides/                           # Teaching with this course
 ├── lab/                              # Lab images: attacker, web-target, ftp-service
 ├── scripts/
 │   ├── setup-lab-env.sh              # Guarded lab launcher
