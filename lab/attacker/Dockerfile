@@ -3,7 +3,7 @@
 # macOS, where the lab's bridge IPs are not reachable from the host.
 #
 #   ./scripts/setup-lab-env.sh shell     # start it and drop into bash
-FROM kalilinux/kali-rolling@sha256:c717f201f29a7e0a9126c0d51bd08aa7194ac82f53c57314339182f92b0b1585
+FROM kalilinux/kali-rolling@sha256:02f5d6c019e549b0f55da58e835cad5355ef1030c6b2645265a324e37dfc4acc
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
