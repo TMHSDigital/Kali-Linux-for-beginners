@@ -1,7 +1,7 @@
 # ftp-service: vsftpd on Alpine with anonymous AND local logins enabled.
 # Everything (USER/PASS, commands, listings, file contents) crosses the wire in
 # cleartext, which is the point of the lab. Multi-arch: runs on amd64 and arm64.
-FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+FROM alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
 
 RUN apk add --no-cache vsftpd
 
