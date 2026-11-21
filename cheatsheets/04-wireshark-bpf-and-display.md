@@ -153,3 +153,78 @@ them.
 | FTP | FTPS / SFTP (over SSH) |
 | Telnet | SSH |
 | POP3/IMAP/SMTP plain | +STARTTLS / implicit TLS |
+
+## Try it in the lab `[Level 1: Intermediate]`
+
+Run these from the attacker shell (`./scripts/setup-lab-env.sh shell`). They
+capture the lab's own cleartext logins, the same traffic module 05 uses, then
+read the file back with display filters. Only capture traffic on the lab
+network (`10.77.0.0/24`).
+
+```bash
+cd /tmp
+# Capture filter (BPF): only the FTP control channel to the FTP target.
+tshark -i eth0 -f "host 10.77.0.20 and port 21" -w ftp.pcapng &
+sleep 2                                    # give tshark time to open eth0
+curl -s ftp://labuser:labpass@10.77.0.20/ >/dev/null
+sleep 1; kill %1                           # flush, then stop the capture
+
+# Same idea for the web target's login form.
+tshark -i eth0 -f "host 10.77.0.10 and tcp port 80" -w web.pcapng &
+sleep 2
+curl -s -o /dev/null -d 'username=admin&password=hunter2' http://10.77.0.10/login
+sleep 1; kill %1
+```
+
+Display filter: the FTP login commands.
+
+```bash
+tshark -r ftp.pcapng -Y 'ftp.request.command == "USER" || ftp.request.command == "PASS"'
+```
+
+```text
+    6 0.000907523    10.77.0.5 → 10.77.0.20   FTP 80 Request: USER labuser
+    9 0.000984096    10.77.0.5 → 10.77.0.20   FTP 80 Request: PASS labpass
+```
+
+Pull just the fields you want with `-T fields` (one line per matching packet):
+
+```bash
+tshark -r ftp.pcapng -Y 'ftp.request.command == "PASS"' -T fields -e ip.src -e ip.dst -e ftp.request.arg
+```
+
+```text
+10.77.0.5	10.77.0.20	labpass
+```
+
+Display filter: the HTTP form POST, then the form fields inside it.
+
+```bash
+tshark -r web.pcapng -Y 'http.request.method == "POST"'
+tshark -r web.pcapng -Y 'urlencoded-form' -T fields -e urlencoded-form.key -e urlencoded-form.value
+```
+
+```text
+    4 0.000158516    10.77.0.5 → 10.77.0.10   HTTP 246 POST /login HTTP/1.1  (application/x-www-form-urlencoded)
+username,password	admin,hunter2
+```
+
+Statistics without the GUI: who talked to whom (`-q` hides the packet list).
+
+```bash
+tshark -r ftp.pcapng -q -z conv,tcp
+```
+
+```text
+================================================================================
+TCP Conversations
+Filter:<No Filter>
+                                                           |       <-      | |       ->      | |     Total     |    Relative    |   Duration   |
+                                                           | Frames  Bytes | | Frames  Bytes | | Frames  Bytes |      Start     |              |
+10.77.0.5:45628            <-> 10.77.0.20:21                   15 1293 bytes      12 859 bytes      27 2152 bytes     0.000000000         0.0516
+================================================================================
+```
+
+Defensive note: every password above was readable by anyone on the path. The
+fix is the table above: replace FTP and HTTP with SFTP and HTTPS, and a capture
+of the same login shows only encrypted TLS or SSH records.
