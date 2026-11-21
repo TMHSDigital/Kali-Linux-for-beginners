@@ -58,7 +58,7 @@ services:
   # ---------------------------------------------------------------------------
   web-target:
     <<: *hardening
-    image: nginx:1.31-alpine@sha256:df221db836e1754089190208cee7eeda94f233197056426eda74a43ab1abeac2
+    image: nginx:1.31-alpine@sha256:fb4658584bd9a916ffb6f6e365f97c25cfdb2923801f551ea08356e695f14ff7
     container_name: web-target
     hostname: web-target
     restart: unless-stopped
