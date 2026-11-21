@@ -140,7 +140,7 @@ Command reference for the Linux core (modules 01-02).
 | `ss -tuln` / `ss -tulpn` | Listening sockets / + process |
 | `dig +short NAME` / `dig -x IP` | DNS lookup / reverse |
 | `ping -c 4 HOST` | Reachability test |
-| `curl -I URL` | HTTP headers only (note: may be gated by ctx-mode) |
+| `curl -I URL` | HTTP headers only |
 
 ## Getting help
 

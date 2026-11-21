@@ -171,11 +171,14 @@ see the traffic. Using the Docker lab:
 ### HTTP form POST (web-target, 10.77.0.10)
 
 1. Start capturing on the lab interface with display filter cleared, e.g. in
-   the attacker shell: `tshark -i eth0 -f "tcp port 80" -w web.pcapng &`
+   the attacker shell: `tshark -i eth0 -f "tcp port 80" -w web.pcapng &`, then
+   `sleep 2`. tshark needs a moment to open the interface; traffic sent before
+   that is lost.
 2. Submit the login form from the same box:
    `curl -s -d 'username=admin&password=hunter2' http://10.77.0.10/login`
    (With a GUI Kali on the lab network you can instead browse
-   `http://10.77.0.10/` and click **Sign in**.) Stop the capture with `kill %1`.
+   `http://10.77.0.10/` and click **Sign in**.) Then `sleep 1` so the last
+   packets reach the file, and stop the capture with `kill %1`.
 3. Open `web.pcapng` (or use `tshark -r web.pcapng -Y ...`) and apply:
    `http.request.method == "POST"`.
 4. Select the POST → expand **HTML Form URL Encoded** in the detail pane, or
@@ -187,7 +190,9 @@ see the traffic. Using the Docker lab:
 ```bash
 # Generate FTP auth traffic while capturing (cleartext USER/PASS on port 21)
 tshark -i eth0 -f "tcp port 21" -w ftp.pcapng &
+sleep 2                                        # let tshark open the interface first
 curl -s ftp://labuser:labpass@10.77.0.20/      # or interactively: ftp 10.77.0.20
+sleep 1                                        # let the last packets reach the file
 kill %1
 ```
 

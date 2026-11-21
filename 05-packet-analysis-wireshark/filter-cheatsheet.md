@@ -116,7 +116,8 @@ CLI usage: `tshark -i eth0 -f "tcp port 80 or tcp port 21" -w out.pcapng`
 | Server Hello | `tls.handshake.type == 2` |
 | SNI (which site, even over HTTPS) | `tls.handshake.extensions_server_name` |
 | Certificate messages | `tls.handshake.type == 11` |
-| Old/weak protocol versions | `tls.record.version == 0x0301` (TLS 1.0) |
+| Old/weak protocol versions (TLS 1.0) | `tls.handshake.version == 0x0301` in a Server Hello (`tls.handshake.type == 2`): the version the server picked. Not `tls.record.version`: TLS 1.2/1.3 clients also put 0x0301 in the record layer for compatibility |
+| TLS 1.3 negotiated | `tls.handshake.extensions.supported_version == 0x0304` in a Server Hello |
 
 ---
 

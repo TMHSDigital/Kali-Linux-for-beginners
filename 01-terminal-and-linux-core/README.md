@@ -1,4 +1,4 @@
-# 01: Terminal & Linux Core `[Level 0: Fundamentals]`
+# 01: Terminal & Linux Core `[Level 0: Fundamental]`
 <!-- time: ~3 hours -->
 
 Everything in offensive and defensive security runs through the shell. Before

