@@ -338,3 +338,11 @@ def test_untracked_markdown_is_not_published(site_builder, tmp_path):
     subprocess.run(["git", "-C", str(repo), "add", "README.md"], check=True)
     result = site_builder.build(repo, tmp_path / "_site", REPO_ROOT / "site")
     assert [d["path"] for d in result["docs"]] == ["README.md"]
+
+
+def test_progress_export_import_controls(built):
+    page = read(built[0], "01-first-module/index.html")
+    assert '<div class="progress-io" hidden>' in page  # shown by app.js only
+    assert 'id="progress-export"' in page and 'id="progress-import"' in page
+    assert '<input id="progress-file" type="file"' in page and 'aria-label="Progress file to import"' in page
+    assert 'id="progress-msg" class="progress-msg" role="status"' in page

@@ -601,6 +601,13 @@ def page_html(*, title: str, description: str, url: str, body: str, sections: Li
           <button id="progress-reset" class="link-btn" type="button">Reset</button></div>
         <div class="progress-bar"><span id="progress-fill"></span></div>
       </div>
+      <div class="progress-io" hidden>
+        <button id="progress-export" class="link-btn" type="button" hidden>Export progress</button>
+        <button id="progress-import" class="link-btn" type="button">Import progress</button>
+        <input id="progress-file" type="file" accept=".json,application/json" hidden
+               aria-label="Progress file to import">
+        <p id="progress-msg" class="progress-msg" role="status"></p>
+      </div>
       <div class="nav-tree">{nav_html(sections, url, prefix)}</div>    </nav>
     <div id="scrim" class="scrim" hidden></div>
     <main class="content">

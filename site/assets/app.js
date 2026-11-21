@@ -175,6 +175,8 @@
       $("#progress-text").textContent = `${count} of ${allDocs.length} complete`;
       $("#progress-fill").style.width = `${Math.round((100 * count) / Math.max(allDocs.length, 1))}%`;
     }
+    const exportBtn = $("#progress-export");
+    if (exportBtn) exportBtn.hidden = count === 0;
     // Per-module "done / total" beside each module heading in the sidebar.
     document.querySelectorAll(".nav-section").forEach((sec) => {
       const h = sec.querySelector("h3");
@@ -219,6 +221,49 @@
   if (resetBtn) {
     resetBtn.addEventListener("click", () => {
       if (window.confirm("Clear your progress in this browser?")) { store.set("done", []); renderProgress(); }
+    });
+  }
+  // Export / import, so progress can move between browsers, machines, and lab VMs.
+  const PROGRESS_FILE = "kali-beginners-progress.json";
+  function parseProgress(text) {
+    let data;
+    try { data = JSON.parse(text); } catch (_) { throw new Error("the file is not valid JSON."); }
+    const list = Array.isArray(data) ? data : data && data.done;
+    if (!Array.isArray(list)) throw new Error(`it is not a ${PROGRESS_FILE} export.`);
+    const known = new Set(allDocs);
+    const pages = list.filter((d) => typeof d === "string" && known.has(d));
+    if (!pages.length) throw new Error("it lists no pages from this course.");
+    return pages;
+  }
+  const io = $(".progress-io");
+  if (io) {
+    io.hidden = false;
+    const msg = $("#progress-msg"), fileInput = $("#progress-file");
+    const say = (text, isError) => { msg.textContent = text; msg.classList.toggle("is-error", Boolean(isError)); };
+    $("#progress-export").addEventListener("click", () => {
+      const data = { format: "kali-beginners-progress", version: 1, done: store.get("done", []) };
+      const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+      const a = el("a", { href: url, download: PROGRESS_FILE });
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      say(`Saved ${PROGRESS_FILE}. Import it in another browser to carry on there.`);
+    });
+    $("#progress-import").addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files[0];
+      fileInput.value = "";
+      if (!file) return;
+      try {
+        if (file.size > 1024 * 1024) throw new Error("the file is too large.");
+        const pages = parseProgress(await file.text());
+        store.set("done", [...new Set([...store.get("done", []), ...pages])]);
+        renderProgress();
+        say(`Imported ${pages.length} completed page(s).`);
+      } catch (err) {
+        say(`Not imported: ${err.message}`, true);
+      }
     });
   }
   const markBtn = $("#mark-done");

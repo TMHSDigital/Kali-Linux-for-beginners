@@ -263,6 +263,12 @@ kbd {
   font: 12px var(--font-mono); text-decoration: underline; text-underline-offset: 2px;
 }
 .link-btn:hover { color: var(--danger); }
+.progress-io { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: -12px 0 22px; }
+.progress-io[hidden] { display: none; }
+.progress-io .link-btn:hover { color: var(--text); }
+.progress-msg { flex-basis: 100%; margin: 0; font: 12px var(--font-mono); color: var(--text-2); }
+.progress-msg:empty { display: none; }
+.progress-msg.is-error { color: var(--danger); }
 .scrim {
   position: fixed; inset: 0; z-index: 65; background: rgba(0, 0, 0, .5);
   backdrop-filter: blur(2px);
