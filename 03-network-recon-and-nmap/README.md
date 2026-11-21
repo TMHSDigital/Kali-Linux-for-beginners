@@ -277,6 +277,48 @@ Host: 10.77.0.20 (ftp-service.pentest-lab-net)   Status: up
 note: on a real server, set `anonymous_enable=NO` in `vsftpd.conf` unless public
 downloads are the point, and even then keep the anonymous area read-only.
 
+### Exporting results
+
+The table is for reading in the terminal. `--format` turns the same scan into
+something you can hand on: `markdown` pastes straight into a findings report,
+`csv` opens in a spreadsheet for sorting and diffing scans, and `json` feeds
+your own scripts.
+
+```bash
+nmap -sV -oX scan.xml 10.77.0.10 10.77.0.20
+parse-nmap-xml.py --format markdown scan.xml >> findings.md
+parse-nmap-xml.py --format csv scan.xml > scan.csv
+```
+
+Expected `--format markdown` output (from the lab):
+
+```text
+### 10.77.0.10 (web-target.pentest-lab-net) (up)
+
+| Port | Proto | State | Service | Product / Version |
+|------|-------|-------|---------|-------------------|
+| 80 | tcp | open | http | nginx 1.31.6 |
+
+### 10.77.0.20 (ftp-service.pentest-lab-net) (up)
+
+| Port | Proto | State | Service | Product / Version |
+|------|-------|-------|---------|-------------------|
+| 21 | tcp | open | ftp | vsftpd 2.0.8 or later |
+```
+
+Expected `--format csv` output:
+
+```text
+address,hostname,status,port,protocol,state,service,product,version,scripts
+10.77.0.10,web-target.pentest-lab-net,up,80,tcp,open,http,nginx,1.31.6,
+10.77.0.20,ftp-service.pentest-lab-net,up,21,tcp,open,ftp,vsftpd,2.0.8 or later,
+```
+
+The `scripts` column is empty here because this scan used `-sV` without `-sC`.
+Defensive note: a saved scan is a map of your weak points. Store reports and
+CSVs like any other sensitive client data, and share them only with the people
+authorized to see them.
+
 ---
 
 ## 7. Defensive visibility: how targets see (or don't see) you
