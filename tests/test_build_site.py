@@ -166,6 +166,12 @@ def test_search_index(built):
 def test_404_uses_absolute_asset_paths(built):
     page = read(built[0], "404.html")
     assert 'href="/Kali-Linux-for-beginners/assets/styles.css"' in page
+    sidebar = re.findall(r'<a href="([^"]*)" data-doc=', page)
+    assert sidebar and all(h.startswith("/Kali-Linux-for-beginners/") for h in sidebar), sidebar
+    assert '<a href="/Kali-Linux-for-beginners/01-first-module/" data-doc=' in page
+    # Doc pages keep relative sidebar links (they work offline and in previews).
+    doc = read(built[0], "01-first-module/index.html")
+    assert '<a href="../02-second-module/" data-doc="02-second-module/"' in doc
 
 
 def test_service_worker_gets_build_id(built):

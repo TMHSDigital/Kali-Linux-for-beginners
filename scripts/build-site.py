@@ -469,14 +469,18 @@ def short_title(sec: Dict, idx: int, item: Dict) -> str:
     return re.sub(rf":\s*{re.escape(name)}$", "", item["title"])
 
 
-def nav_html(sections: List[Dict], current_url: str) -> str:
+def nav_html(sections: List[Dict], current_url: str, prefix: Optional[str] = None) -> str:
+    """Sidebar tree. Links are relative, or `prefix + url` when a prefix is given (the 404 page)."""
+    def href(to_url: str) -> str:
+        return prefix + to_url if prefix is not None else rel_href(current_url, to_url)
+
     out = []
     for sec in sections:
         items = []
         for i, it in enumerate(sec["items"]):
             active = it["url"] == current_url
             items.append(
-                f'<li><a href="{esc(rel_href(current_url, it["url"]))}" data-doc="{esc(it["url"])}"'
+                f'<li><a href="{esc(href(it["url"]))}" data-doc="{esc(it["url"])}"'
                 + (' class="active" aria-current="page"' if active else "")
                 + f'><span class="done-mark" aria-hidden="true"></span>{esc(short_title(sec, i, it))}</a></li>'
             )
@@ -579,7 +583,7 @@ def page_html(*, title: str, description: str, url: str, body: str, sections: Li
           <button id="progress-reset" class="link-btn" type="button">Reset</button></div>
         <div class="progress-bar"><span id="progress-fill"></span></div>
       </div>
-      <div class="nav-tree">{nav_html(sections, url)}</div>    </nav>
+      <div class="nav-tree">{nav_html(sections, url, prefix)}</div>    </nav>
     <div id="scrim" class="scrim" hidden></div>
     <main class="content">
       {body}
