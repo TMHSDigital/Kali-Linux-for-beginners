@@ -7,14 +7,7 @@
 # attacker + target containers, waits for them to be healthy, and prints the
 # commands to run next.
 #
-# Usage:
-#   ./scripts/setup-lab-env.sh          # verify + start the lab
-#   ./scripts/setup-lab-env.sh shell    # open a bash shell on the attacker box
-#   ./scripts/setup-lab-env.sh status   # show container status
-#   ./scripts/setup-lab-env.sh down     # stop and remove the lab
-#
-# Exit codes: 0 ok | 1 dependency missing | 2 daemon down | 3 compose error
-#             4 subnet conflict
+# Usage and exit codes: see usage() below, or run with --help.
 # =============================================================================
 set -Eeuo pipefail  # -E: functions inherit the ERR trap below
 
@@ -40,6 +33,22 @@ info()  { printf '%s[*]%s %s\n'  "${C_BLU}" "${C_RST}" "$*"; }
 ok()    { printf '%s[+]%s %s\n'  "${C_GRN}" "${C_RST}" "$*"; }
 warn()  { printf '%s[!]%s %s\n'  "${C_YEL}" "${C_RST}" "$*" >&2; }
 die()   { printf '%s[x]%s %s\n'  "${C_RED}" "${C_RST}" "$1" >&2; exit "${2:-1}"; }
+
+usage() {
+  cat <<'EOF'
+Usage: ./scripts/setup-lab-env.sh [action]
+
+Actions:
+  up        verify Docker and start the lab (the default)
+  shell     open a bash shell on the attacker box
+  status    show container status
+  down      stop and remove the lab
+  help      show this help (also -h, --help)
+
+Exit codes: 0 ok | 1 dependency missing | 2 daemon down | 3 compose error
+            4 subnet conflict
+EOF
+}
 
 # --- Trap so a mid-script failure is reported clearly ------------------------
 trap 'die "Aborted at line ${LINENO}. See messages above." 3' ERR
@@ -186,6 +195,9 @@ lab_status() {
 # --- Entry point -------------------------------------------------------------
 main() {
   local action="${1:-up}"
+  case "${action}" in
+    help|-h|--help) usage; return 0 ;;
+  esac
   require_docker
   require_daemon
   require_compose_file
@@ -195,7 +207,7 @@ main() {
     shell)  lab_shell ;;
     down)   lab_down ;;
     status) lab_status ;;
-    *)      die "Unknown action '${action}'. Use: up | shell | status | down" 1 ;;
+    *)      die "Unknown action '${action}'. Use: up | shell | status | down (see --help)" 1 ;;
   esac
 }
 
