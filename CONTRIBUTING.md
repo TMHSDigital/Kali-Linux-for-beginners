@@ -80,6 +80,10 @@ bash tests/test-setup-lab-env.sh   # setup script's subnet guard; no Docker need
 python scripts/build-site.py --out _site && (cd _site && python -m http.server 8099)
 ```
 
+The site build publishes only Markdown that git tracks, so scratch notes never
+reach the site. A new page shows up in the preview once you `git add` it; until
+then the build lists it as skipped.
+
 CI also runs shellcheck, actionlint, an offline Markdown link and anchor check,
 and the full lab smoke test. The site deploys from `main` only when all of
 that passes.

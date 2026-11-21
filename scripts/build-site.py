@@ -238,6 +238,26 @@ def markdown_files(repo: Path) -> List[Path]:
     return sorted(p for p in paths if p.is_file())
 
 
+def untracked_markdown(repo: Path) -> List[str]:
+    """Untracked, unignored Markdown that markdown_files() skips, so main() can say so.
+
+    A new page stays off the site until it is `git add`ed; without this note a
+    contributor previewing it would think the build ignored it.
+    """
+    if not (repo / ".git").exists():
+        return []
+    try:
+        listed = subprocess.run(
+            ["git", "-C", str(repo), "ls-files", "-z", "--others", "--exclude-standard", "--", "*.md"],
+            capture_output=True, check=True).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return []
+    rels = [p for p in listed.decode("utf-8").split("\0") if p]
+    return sorted(r for r in rels
+                  if not any(part in EXCLUDE_DIRS for part in Path(r).parts)
+                  and Path(r).name not in EXCLUDE_FILES)
+
+
 def discover(repo: Path) -> List[Dict]:
     """Build the ordered list of sections with their Markdown items."""
     root_items: List[Dict] = []
@@ -976,6 +996,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     print(f"  {len(result['sections'])} section(s), {len(result['docs'])} document(s)")
     for s in result["sections"]:
         print(f"  - {s['title']}: {len(s['items'])} doc(s)")
+    skipped = untracked_markdown(REPO_ROOT)
+    if skipped:
+        print(f"  Skipped {len(skipped)} untracked Markdown file(s); `git add` them to publish:")
+        for rel in skipped:
+            print(f"    {rel}")
     return 0
 
 

@@ -338,6 +338,7 @@ def test_untracked_markdown_is_not_published(site_builder, tmp_path):
     subprocess.run(["git", "-C", str(repo), "add", "README.md"], check=True)
     result = site_builder.build(repo, tmp_path / "_site", REPO_ROOT / "site")
     assert [d["path"] for d in result["docs"]] == ["README.md"]
+    assert site_builder.untracked_markdown(repo) == ["notes/private.md"]
 
 
 def test_progress_export_import_controls(built):
