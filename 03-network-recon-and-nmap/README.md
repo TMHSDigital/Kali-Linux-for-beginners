@@ -239,6 +239,44 @@ parse-nmap-xml.py lab.xml
 nmap -sV -oX - 10.77.0.10 | parse-nmap-xml.py -
 ```
 
+The parser keeps NSE script results too, printed under their port in Nmap's own
+`|` / `|_` style, so a `-sC` finding does not vanish from your table:
+
+```bash
+nmap -sC -sV -oX - 10.77.0.20 | parse-nmap-xml.py -
+```
+
+Expected output (from the lab):
+
+```text
+Nmap results: 1 host(s), 1 up
+
+================================================================
+Host: 10.77.0.20 (ftp-service.pentest-lab-net)   Status: up
+================================================================
+  PORT  PROTO  STATE  SERVICE  PRODUCT / VERSION
+  ----  -----  -----  -------  ---------------------
+  21    tcp    open   ftp      vsftpd 2.0.8 or later
+  | ftp-syst: STAT:
+  | FTP server status:
+  |      Connected to 10.77.0.5
+  |      Logged in as ftp
+  |      TYPE: ASCII
+  |      No session bandwidth limit
+  |      Session timeout in seconds is 300
+  |      Control connection is plain text
+  |      Data connections will be plain text
+  |      At session startup, client count was 3
+  |      vsFTPd 3.0.5 - secure, fast, stable
+  |_End of status
+  | ftp-anon: Anonymous FTP login allowed (FTP code 230)
+  |_drwxr-xr-x    2 0        0            4096 Oct 10 02:48 pub
+```
+
+`ftp-anon` is the finding: anyone can log in without a password. Defensive
+note: on a real server, set `anonymous_enable=NO` in `vsftpd.conf` unless public
+downloads are the point, and even then keep the anonymous area read-only.
+
 ---
 
 ## 7. Defensive visibility: how targets see (or don't see) you

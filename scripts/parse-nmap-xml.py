@@ -3,7 +3,8 @@
 
 Ingests the XML produced by ``nmap -oX <file>`` (or ``-oX -`` to stdout) and
 prints, per host, a formatted table of open/ open|filtered ports with their
-protocol, state, service name, product, and version. ``--format`` switches the
+protocol, state, service name, product, and version, plus any NSE script
+results (``-sC``, ``--script``). ``--format`` switches the
 output to Markdown (paste straight into a report), CSV, or JSON.
 
 Standard library only (``xml.etree.ElementTree`` + ``argparse``); no pip
@@ -24,8 +25,14 @@ import csv
 import json
 import sys
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass
-from typing import List, Optional, TextIO
+import re
+from dataclasses import dataclass, field
+from typing import List, Optional, TextIO, Tuple
+
+# An NSE script result: (script id, output text). Script output is untrusted
+# scan data, so control characters are stripped before it is printed.
+Script = Tuple[str, str]
+_CONTROL_RE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
 
 
 # --------------------------------------------------------------------------- #
@@ -39,6 +46,7 @@ class Port:
     service: str
     product: str
     version: str
+    scripts: List[Script] = field(default_factory=list)
 
     @property
     def version_str(self) -> str:
@@ -53,6 +61,7 @@ class Host:
     hostname: str
     status: str
     ports: List[Port]
+    scripts: List[Script] = field(default_factory=list)
 
 
 # --------------------------------------------------------------------------- #
@@ -87,6 +96,14 @@ def _text(elem: Optional[ET.Element], attr: str, default: str = "") -> str:
     if elem is None:
         return default
     return elem.get(attr, default)
+
+
+def _scripts(parent: Optional[ET.Element]) -> List[Script]:
+    """The <script id=... output=...> children of a <port> or <hostscript>."""
+    if parent is None:
+        return []
+    return [(el.get("id", ""), _CONTROL_RE.sub("", el.get("output", "")).strip("\n"))
+            for el in parent.findall("script")]
 
 
 def parse_hosts(root: ET.Element, keep_all_states: bool) -> List[Host]:
@@ -138,18 +155,36 @@ def parse_hosts(root: ET.Element, keep_all_states: bool) -> List[Host]:
                         service=_text(svc_el, "name", ""),
                         product=_text(svc_el, "product", ""),
                         version=_text(svc_el, "version", ""),
+                        scripts=_scripts(port_el),
                     )
                 )
 
         ports.sort(key=lambda p: (p.protocol, p.portid))
         hosts.append(Host(address=address, hostname=hostname,
-                          status=status, ports=ports))
+                          status=status, ports=ports,
+                          scripts=_scripts(host_el.find("hostscript"))))
     return hosts
 
 
 # --------------------------------------------------------------------------- #
 # Rendering
 # --------------------------------------------------------------------------- #
+def script_lines(scripts: List[Script]) -> List[str]:
+    """Nmap's own layout: '| id: line', '|   more', and '|_' on the last line."""
+    lines: List[str] = []
+    for sid, output in scripts:
+        body = output.splitlines() or [""]
+        chunk = [f"{sid}: {body[0].strip()}".rstrip()] + body[1:]
+        lines += ["| " + line for line in chunk[:-1]] + ["|_" + chunk[-1]]
+    return lines
+
+
+def script_summary(scripts: List[Script]) -> str:
+    """All script results on one line (for CSV cells)."""
+    return "; ".join(f"{sid}: " + " / ".join(ln.strip() for ln in out.splitlines() if ln.strip())
+                     for sid, out in scripts)
+
+
 def render(hosts: List[Host], pal: Palette, out: TextIO) -> None:
     if not hosts:
         print("No hosts found in the Nmap XML.", file=out)
@@ -172,7 +207,10 @@ def render(hosts: List[Host], pal: Palette, out: TextIO) -> None:
         print(pal.blue("=" * 64), file=out)
 
         if not host.ports:
-            print("  (no open/filtered ports reported)\n", file=out)
+            print("  (no open/filtered ports reported)", file=out)
+            for line in script_lines(host.scripts):
+                print("  " + line, file=out)
+            print("", file=out)
             continue
 
         # Compute column widths from the data so the table always lines up.
@@ -198,7 +236,7 @@ def render(hosts: List[Host], pal: Palette, out: TextIO) -> None:
         print("  " + "  ".join("-" * widths[i] for i in range(len(headers))),
               file=out)
 
-        for r in rows:
+        for p, r in zip(host.ports, rows):
             cells = [
                 r[0].ljust(widths[0]),
                 r[1].ljust(widths[1]),
@@ -207,6 +245,12 @@ def render(hosts: List[Host], pal: Palette, out: TextIO) -> None:
                 r[4].ljust(widths[4]),
             ]
             print("  " + "  ".join(cells), file=out)
+            for line in script_lines(p.scripts):
+                print("  " + line, file=out)
+        if host.scripts:
+            print("\n  " + pal.bold("Host script results:"), file=out)
+            for line in script_lines(host.scripts):
+                print("  " + line, file=out)
         print("", file=out)
 
 
@@ -217,6 +261,7 @@ def _flat_rows(hosts: List[Host]) -> List[dict]:
             "address": h.address, "hostname": h.hostname, "status": h.status,
             "port": p.portid, "protocol": p.protocol, "state": p.state,
             "service": p.service, "product": p.product, "version": p.version,
+            "scripts": script_summary(p.scripts),
         }
         for h in hosts for p in h.ports
     ]
@@ -228,9 +273,11 @@ def render_json(hosts: List[Host], out: TextIO) -> None:
             "address": h.address, "hostname": h.hostname, "status": h.status,
             "ports": [
                 {"port": p.portid, "protocol": p.protocol, "state": p.state,
-                 "service": p.service, "product": p.product, "version": p.version}
+                 "service": p.service, "product": p.product, "version": p.version,
+                 "scripts": [{"id": sid, "output": o} for sid, o in p.scripts]}
                 for p in h.ports
             ],
+            "scripts": [{"id": sid, "output": o} for sid, o in h.scripts],
         }
         for h in hosts
     ]
@@ -240,7 +287,7 @@ def render_json(hosts: List[Host], out: TextIO) -> None:
 
 def render_csv(hosts: List[Host], out: TextIO) -> None:
     fields = ["address", "hostname", "status", "port", "protocol", "state",
-              "service", "product", "version"]
+              "service", "product", "version", "scripts"]
     writer = csv.DictWriter(out, fieldnames=fields, lineterminator="\n")
     writer.writeheader()
     writer.writerows(_flat_rows(hosts))
@@ -258,13 +305,21 @@ def render_markdown(hosts: List[Host], out: TextIO) -> None:
         print(f"### {cell(label)} ({host.status})\n", file=out)
         if not host.ports:
             print("_No open/filtered ports reported._\n", file=out)
-            continue
-        print("| Port | Proto | State | Service | Product / Version |", file=out)
-        print("|------|-------|-------|---------|-------------------|", file=out)
-        for p in host.ports:
-            print(f"| {p.portid} | {p.protocol} | {cell(p.state)} | "
-                  f"{cell(p.service)} | {cell(p.version_str)} |", file=out)
-        print("", file=out)
+        else:
+            print("| Port | Proto | State | Service | Product / Version |", file=out)
+            print("|------|-------|-------|---------|-------------------|", file=out)
+            for p in host.ports:
+                print(f"| {p.portid} | {p.protocol} | {cell(p.state)} | "
+                      f"{cell(p.service)} | {cell(p.version_str)} |", file=out)
+            print("", file=out)
+        # Script output is multi-line, so it goes in a code block after the table.
+        entries = [(f"{p.portid}/{p.protocol}", sc) for p in host.ports for sc in p.scripts]
+        entries += [("host", sc) for sc in host.scripts]
+        if entries:
+            text = "\n".join(f"{where} {ln}" if i == 0 else f"{' ' * len(where)} {ln}"
+                             for where, sc in entries for i, ln in enumerate(script_lines([sc])))
+            fence = "`" * max(3, 1 + max((len(m) for m in re.findall(r"`+", text)), default=0))
+            print(f"Script output:\n\n{fence}text\n{text}\n{fence}\n", file=out)
 
 
 # --------------------------------------------------------------------------- #

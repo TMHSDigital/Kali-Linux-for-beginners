@@ -176,3 +176,49 @@ def test_help_shows_examples(nmap_parser):
     assert "examples:" in text
     assert "nmap -sV -oX - 10.77.0.10 | parse-nmap-xml.py -" in text
     assert "--format markdown" in text and "--format json" in text
+
+
+# --- NSE script output ------------------------------------------------------
+def test_port_scripts_are_parsed(nmap_parser):
+    ftp = {h.address: h for h in hosts_from(nmap_parser, "lab.xml")}["10.77.0.20"]
+    scripts = dict(ftp.ports[0].scripts)
+    assert scripts["ftp-anon"].startswith("Anonymous FTP login allowed (FTP code 230)")
+
+
+def test_table_shows_scripts_nmap_style(nmap_parser, capsys):
+    _, out = run_cli(nmap_parser, capsys, str(FIXTURES / "lab.xml"), "--no-color")
+    assert "  | ftp-anon: Anonymous FTP login allowed (FTP code 230)\n" in out
+    assert "  |_http-title: Lab Login (INSECURE DEMO)\n" in out
+
+
+def test_markdown_json_csv_include_scripts(nmap_parser, capsys):
+    lab = str(FIXTURES / "lab.xml")
+    _, md = run_cli(nmap_parser, capsys, lab, "--format", "markdown")
+    assert "```text\n21/tcp | ftp-anon: Anonymous FTP login allowed" in md
+    _, js = run_cli(nmap_parser, capsys, lab, "--format", "json")
+    ftp = next(h for h in json.loads(js) if h["address"] == "10.77.0.20")
+    assert {"id", "output"} <= ftp["ports"][0]["scripts"][0].keys()
+    assert any(s["id"] == "ftp-anon" for s in ftp["ports"][0]["scripts"])
+    _, cs = run_cli(nmap_parser, capsys, lab, "--format", "csv")
+    row = next(r for r in csv.DictReader(io.StringIO(cs)) if r["port"] == "21")
+    assert "ftp-anon: Anonymous FTP login allowed (FTP code 230) / drwx" in row["scripts"]
+
+
+HOSTSCRIPT = """<?xml version="1.0"?>
+<nmaprun><host><status state="up"/><address addr="10.77.0.10" addrtype="ipv4"/>
+<ports><port protocol="tcp" portid="80"><state state="open"/><service name="http"/>
+<script id="http-title" output="evil&#x9b;31m ```title"/></port></ports>
+<hostscript><script id="clock-skew" output="0s"/></hostscript>
+</host></nmaprun>
+"""
+
+
+def test_host_scripts_and_untrusted_output(nmap_parser, capsys, tmp_path):
+    xml = tmp_path / "hs.xml"
+    xml.write_text(HOSTSCRIPT)
+    _, out = run_cli(nmap_parser, capsys, str(xml), "--no-color")
+    assert "Host script results:" in out and "|_clock-skew: 0s" in out
+    assert "\x9b" not in out  # C1 control characters from scan data are stripped
+    _, md = run_cli(nmap_parser, capsys, str(xml), "--format", "markdown")
+    assert "````text\n" in md  # fence longer than the backticks in the output
+    assert "host |_clock-skew: 0s" in md
