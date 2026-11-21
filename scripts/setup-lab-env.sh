@@ -43,6 +43,8 @@ Actions:
   shell     open a bash shell on the attacker box
   status    show container status
   down      stop and remove the lab
+  reset     throw away the lab containers and start fresh, pristine ones
+            (your files in workspace/ on the host are kept)
   help      show this help (also -h, --help)
 
 Exit codes: 0 ok | 1 dependency missing | 2 daemon down | 3 compose error
@@ -139,10 +141,11 @@ wait_healthy() {
   return 1
 }
 
+# Extra arguments go to 'docker compose up' (reset passes --force-recreate).
 lab_up() {
   info "Building and starting the lab (the first run downloads Kali; give it a few minutes) ..."
   mkdir -p "${REPO_ROOT}/workspace"
-  compose up -d --build
+  compose up -d --build "$@"
   local svc unhealthy=""
   for svc in web-target ftp-service attacker; do
     wait_healthy "${svc}" || unhealthy+=" ${svc}"
@@ -188,6 +191,13 @@ lab_down() {
   ok "Lab stopped and containers removed."
 }
 
+lab_reset() {
+  info "Resetting the lab: removing containers, volumes, and the lab network ..."
+  compose down -v --remove-orphans
+  validate_network
+  lab_up --force-recreate
+}
+
 lab_status() {
   compose ps
 }
@@ -207,7 +217,8 @@ main() {
     shell)  lab_shell ;;
     down)   lab_down ;;
     status) lab_status ;;
-    *)      die "Unknown action '${action}'. Use: up | shell | status | down (see --help)" 1 ;;
+    reset)  lab_reset ;;
+    *)      die "Unknown action '${action}'. Use: up | shell | status | down | reset (see --help)" 1 ;;
   esac
 }
 

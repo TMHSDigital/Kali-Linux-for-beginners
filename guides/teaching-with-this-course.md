@@ -31,7 +31,10 @@ saves an awkward conversation.
 Have everyone run the lab once before the first session that needs it. The first
 `./scripts/setup-lab-env.sh` downloads the Kali image, which can take a while on a
 shared connection. On the day, `bash tests/lab-smoke.sh` is a quick way to see
-whose lab is healthy: it prints one `PASS` or `FAIL` line per check.
+whose lab is healthy: it prints one `PASS` or `FAIL` line per check. Before each
+session (or when a learner's lab gets into a strange state),
+`./scripts/setup-lab-env.sh reset` rebuilds fresh containers so everyone starts
+from the same known-good targets. It keeps the files in `workspace/`.
 
 **Give each learner their own lab.** Don't point a whole room at one shared set of
 targets. The lab is built for one person, and a shared target turns one
