@@ -91,6 +91,10 @@ services:
     container_name: ftp-service
     hostname: ftp-service
     restart: unless-stopped
+    # vsftpd segfaults when it runs as PID 1 and a client connects and hangs up
+    # without logging in (a port probe, an nmap -sT scan, the healthcheck).
+    # Docker's init runs as PID 1 instead and vsftpd stays up.
+    init: true
     cap_add: [CHOWN, FOWNER, SETUID, SETGID, NET_BIND_SERVICE, SYS_CHROOT, DAC_OVERRIDE]
     networks:
       pentest-lab-net:
