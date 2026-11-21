@@ -1,5 +1,6 @@
 # 01: Terminal & Linux Core `[Level 0: Fundamental]`
 <!-- time: ~3 hours -->
+<!-- outcome: Navigate, inspect, and manipulate Linux from the shell; use pipes and redirection. -->
 
 Everything in offensive and defensive security runs through the shell. Before
 you scan a network or crack a handshake, you must move around a Linux system

@@ -346,3 +346,49 @@ def test_progress_export_import_controls(built):
     assert 'id="progress-export"' in page and 'id="progress-import"' in page
     assert '<input id="progress-file" type="file"' in page and 'aria-label="Progress file to import"' in page
     assert 'id="progress-msg" class="progress-msg" role="status"' in page
+
+
+# --- landing facts come from the repo, not hardcoded lists ---------------------
+def test_landing_lab_ips_match_docker_compose(site_builder, tmp_path):
+    out = tmp_path / "_site"
+    site_builder.build(REPO_ROOT, out, REPO_ROOT / "site")
+    compose = (REPO_ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+    lab_ips = set(re.findall(r"ipv4_address:\s*([\d.]+)", compose))
+    page = read(out, "index.html")
+    shown = set(re.findall(r"\b10\.77\.0\.\d+\b", page)) - {"10.77.0.0"}
+    assert shown and shown <= lab_ips, shown - lab_ips
+    for name, _, _ in site_builder.LAB_HOSTS:
+        assert f"<code>{name}</code>" in page
+
+
+def test_lab_hosts_reads_compose(site_builder, tmp_path):
+    (tmp_path / "docker-compose.yml").write_text(
+        "services:\n  attacker:\n    networks:\n      net:\n        ipv4_address: 10.9.0.5\n"
+        "  web-target:\n    networks:\n      net:\n        ipv4_address: 10.9.0.10\n"
+        "  ftp-service:\n    networks:\n      net:\n        ipv4_address: 10.9.0.20\n")
+    hosts = site_builder.lab_hosts(tmp_path)
+    assert [(h[0], h[1]) for h in hosts] == [
+        ("attacker", "10.9.0.5"), ("web-target", "10.9.0.10"), ("ftp-service", "10.9.0.20")]
+    (tmp_path / "docker-compose.yml").write_text("services:\n  attacker:\n")
+    with pytest.raises(SystemExit, match="no ipv4_address"):
+        site_builder.lab_hosts(tmp_path)
+
+
+def test_lab_checks_sentence_and_outcomes_are_generated(site_builder, tmp_path):
+    repo = tmp_path / "repo"
+    for d in ("01-a", "02-b", "03-c"):
+        (repo / d).mkdir(parents=True)
+        (repo / d / "README.md").write_text(
+            f"# {d[:2]}: Mod {d[-1]}\n<!-- time: ~1 hours -->\n<!-- outcome: Learn {d[-1]}. -->\n\nBody.\n")
+        if d != "02-b":
+            (repo / d / "lab-exercises.md").write_text("# Lab Exercises\n")
+    out = tmp_path / "_site"
+    site_builder.build(repo, out, REPO_ROOT / "site")
+    page = " ".join(read(out, "index.html").split())
+    assert "Modules 01 and 03 end with lab checks that print PASS or FAIL." in page
+    assert "<p>Learn a.</p>" in page and "<p>Learn c.</p>" in page
+
+
+def test_every_module_readme_has_an_outcome(site_builder):
+    for readme in sorted(REPO_ROOT.glob("[0-9][0-9]-*/README.md")):
+        assert site_builder.doc_entry(readme, REPO_ROOT)["outcome"], readme

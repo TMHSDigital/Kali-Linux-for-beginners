@@ -68,20 +68,16 @@ EXCLUDE_FILES = {"CLAUDE.md", "CLAUDE.local.md", "AGENTS.md", "CODE_OF_CONDUCT.m
 H1_RE = re.compile(r"^\s*#\s+(.+?)\s*$", re.MULTILINE)
 LEVEL_RE = re.compile(r"\s*`\[(Level[^\]]*)\]`\s*$")
 TIME_RE = re.compile(r"<!--\s*time:\s*(.+?)\s*-->")
-# The practice lab from docker-compose.yml, shown on the landing page.
+# What a module leaves you able to do, shown on the landing page:
+# <!-- outcome: ... --> under the module README's H1.
+OUTCOME_RE = re.compile(r"<!--\s*outcome:\s*(.+?)\s*-->", re.DOTALL)
+# The practice lab hosts shown on the landing page: (service, role, description).
+# Their addresses are read from docker-compose.yml, so the page cannot drift from the lab.
 LAB_HOSTS = [
-    ("attacker", "10.77.0.5", "Kali toolbox", "nmap, tshark, tcpdump, ftp, curl. You run every module from here."),
-    ("web-target", "10.77.0.10", "nginx, plain HTTP", "A login form that sends credentials in cleartext."),
-    ("ftp-service", "10.77.0.20", "vsftpd", "Anonymous and labuser/labpass logins, all cleartext."),
+    ("attacker", "Kali toolbox", "nmap, tshark, tcpdump, ftp, curl. You run every module from here."),
+    ("web-target", "nginx, plain HTTP", "A login form that sends credentials in cleartext."),
+    ("ftp-service", "vsftpd", "Anonymous and labuser/labpass logins, all cleartext."),
 ]
-# What each module leaves you able to do (keep in step with the README's curriculum table).
-MODULE_OUTCOMES = {
-    "01": "Navigate, inspect, and manipulate Linux from the shell; use pipes and redirection.",
-    "02": "Read the Unix privilege model; audit SUID and sudo for escalation surface.",
-    "03": "Map a network and choose the right scan for stealth, speed, or depth.",
-    "04": "Capture and crack a WPA2 handshake in a lab; understand WPA3 and PMF defenses.",
-    "05": "Reassemble sessions, extract cleartext credentials, and describe the fix.",
-}
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; "
        "img-src 'self' data: https:; connect-src 'self'; font-src 'self'; "
        "object-src 'none'; base-uri 'self'; form-action 'none'")
@@ -178,8 +174,43 @@ def doc_entry(md: Path, repo: Path) -> Dict:
     if rel.lower() == "readme.md":
         title = "Overview"
     t = TIME_RE.search(text)
+    o = OUTCOME_RE.search(text)
     return {"title": title, "level": level, "time": t.group(1) if t else "",
+            "outcome": " ".join(o.group(1).split()) if o else "",
             "path": rel, "url": page_url(rel)}
+
+
+def compose_ips(compose: Path) -> Dict[str, str]:
+    """service name -> ipv4_address from docker-compose.yml (a regex, no YAML dependency)."""
+    ips: Dict[str, str] = {}
+    service = None
+    for line in read_text(compose).splitlines():
+        m = re.match(r"^  ([\w.-]+):\s*$", line)  # a service key, two spaces in under services:
+        if m:
+            service = m.group(1)
+            continue
+        m = re.match(r"^\s+ipv4_address:\s*([\d.]+)\s*$", line)
+        if m and service:
+            ips[service] = m.group(1)
+    return ips
+
+
+def lab_hosts(repo: Path) -> List[Tuple[str, str, str, str]]:
+    """LAB_HOSTS with each address from the repo's docker-compose.yml."""
+    compose = repo / "docker-compose.yml"
+    ips = compose_ips(compose if compose.exists() else REPO_ROOT / "docker-compose.yml")
+    missing = [name for name, _, _ in LAB_HOSTS if name not in ips]
+    if missing:
+        raise SystemExit(f"error: no ipv4_address for {', '.join(missing)} in docker-compose.yml; "
+                         "update LAB_HOSTS in build-site.py")
+    return [(name, ips[name], role, desc) for name, role, desc in LAB_HOSTS]
+
+
+def joined(items: List[str]) -> str:
+    """'01', '01 and 02', '01, 02, and 03'."""
+    if len(items) < 3:
+        return " and ".join(items)
+    return ", ".join(items[:-1]) + ", and " + items[-1]
 
 
 def sort_items(items: List[Dict]) -> List[Dict]:
@@ -718,7 +749,8 @@ def hero_terminal() -> str:
           </figure>"""
 
 
-def landing_body(sections: List[Dict], docs_meta: Dict[str, Dict]) -> str:
+def landing_body(sections: List[Dict], docs_meta: Dict[str, Dict],
+                 hosts_list: List[Tuple[str, str, str, str]]) -> str:
     modules = [s for s in sections if is_module(s)]
     others = [s for s in sections if s["id"] != "home" and not is_module(s)]
     first = first_module_url(sections)
@@ -730,7 +762,7 @@ def landing_body(sections: List[Dict], docs_meta: Dict[str, Dict]) -> str:
         num, name = module_name(sec)
         lvl = level_num(lead["level"])
         label = lead["level"].split(":", 1)[-1].strip() if lead["level"] else ""
-        outcome = MODULE_OUTCOMES.get(num) or docs_meta.get(lead["path"], {}).get("description", "")
+        outcome = lead["outcome"] or docs_meta.get(lead["path"], {}).get("description", "")
         subs = "".join(f'<li><a href="{esc(it["url"])}">{esc(short_title(sec, i, it))}</a></li>'
                        for i, it in enumerate(sec["items"]) if i)
         rows.append(f"""<li class="module" data-level="{lvl}" data-section="{esc(sec["id"])}">
@@ -745,7 +777,13 @@ def landing_body(sections: List[Dict], docs_meta: Dict[str, Dict]) -> str:
           </li>""")
 
     hosts = "".join(f"""<tr><th scope="row"><code>{esc(name)}</code></th><td><code>{esc(ip)}</code></td>
-              <td>{esc(role)}</td><td>{esc(desc)}</td></tr>""" for name, ip, role, desc in LAB_HOSTS)
+              <td>{esc(role)}</td><td>{esc(desc)}</td></tr>""" for name, ip, role, desc in hosts_list)
+
+    checked = [module_name(s)[0] for s in modules
+               if any(it["path"].endswith("/lab-exercises.md") for it in s["items"])]
+    checks = (f"{'Module' if len(checked) == 1 else 'Modules'} {joined(checked)} "
+              f"{'ends' if len(checked) == 1 else 'end'} with lab checks that print PASS or FAIL. "
+              if checked else "")
 
     lab_cmds = "\n".join(
         f'<span class="t-prompt">$</span> {esc(cmd):<34}<span class="t-dim"># {esc(note)}</span>'
@@ -778,8 +816,8 @@ def landing_body(sections: List[Dict], docs_meta: Dict[str, Dict]) -> str:
         <section class="band" aria-labelledby="course-h">
           <h2 id="course-h">Course</h2>
           <p class="band-lead">Take the modules in order. Every technique gives the command, the output it
-            prints in the lab, and how a defender spots or stops it. Modules 01 and 02 end with lab checks
-            that print PASS or FAIL. Pages you mark complete are remembered in this browser.</p>
+            prints in the lab, and how a defender spots or stops it. {checks}Pages you mark complete are
+            remembered in this browser.</p>
           <ol class="modules">{"".join(rows)}</ol>
         </section>
 
@@ -890,7 +928,8 @@ def build(repo: Path, out: Path, site_src: Path) -> Dict:
                        "headings": r["headings"], "text": r["text"], "parts": r["parts"]})
 
     write(out, "", page_html(title=SITE_TITLE, description=SITE_TAGLINE, url="",
-                             body=landing_body(sections, rendered_all), page_class="page-landing", **common))
+                             body=landing_body(sections, rendered_all, lab_hosts(repo)),
+                             page_class="page-landing", **common))
 
     base_path = urlsplit(SITE_URL).path  # 404 is served at any depth: absolute paths
     (out / "404.html").write_text(page_html(

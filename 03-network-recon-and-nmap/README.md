@@ -1,5 +1,6 @@
 # 03: Network Recon & Nmap `[Level 2: Reconnaissance]`
 <!-- time: ~4 hours -->
+<!-- outcome: Map a network and choose the right scan for stealth, speed, or depth. -->
 
 Reconnaissance answers three questions before any exploitation: *what hosts are
 alive, what services do they run, and what versions are those services?* Nmap is

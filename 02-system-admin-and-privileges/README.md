@@ -1,5 +1,6 @@
 # 02: System Administration & Privileges `[Level 1: Administration]`
 <!-- time: ~4 hours -->
+<!-- outcome: Read the Unix privilege model; audit SUID and sudo for escalation surface. -->
 
 Privilege determines what every process on a system is allowed to do. Most
 attack chains end in the same place: turning the access you have into more

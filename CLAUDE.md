@@ -16,7 +16,8 @@ Markdown. See CONTRIBUTING.md for the full guide; the essentials:
 ## Content rules
 - Tag commands by depth: `[Level 0: Fundamental]`, `[Level 1: Intermediate]`,
   `[Level 2+: Advanced / Field Ops]`. Module H1 ends with a level tag; add
-  `<!-- time: ~N hours -->` on the line after it.
+  `<!-- time: ~N hours -->` on the line after it, then `<!-- outcome: ... -->`
+  (the one-line outcome shown on the site's landing page).
 - Every technique gets the command, its expected output, and a defensive note.
 - Examples only target the lab (`10.77.0.0/24`), `127.0.0.1`, or documentation
   ranges. Never real third-party hosts. Keep authorization warnings.

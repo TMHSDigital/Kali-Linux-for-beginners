@@ -1,5 +1,6 @@
 # 04: Wireless Security & the Aircrack-ng Suite `[Level 2: Wireless Exploitation]`
 <!-- time: ~4 hours (more with hardware) -->
+<!-- outcome: Capture and crack a WPA2 handshake in a lab; understand WPA3 and PMF defenses. -->
 
 Wi-Fi security is a physics-meets-cryptography problem: frames travel through the
 air where anyone with the right radio can hear them, so the protection is

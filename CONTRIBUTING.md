@@ -38,7 +38,9 @@ appears in the navigation automatically, titled by its first `#` heading.
 2. **Tag depth** in code comments: `[Level 0: Fundamental]`,
    `[Level 1: Intermediate]`, `[Level 2+: Advanced / Field Ops]`. A module's H1
    ends with its level tag, e.g. ``# 06: Web Basics `[Level 2: Web]` ``, and the
-   next line carries a time estimate: `<!-- time: ~3 hours -->`.
+   next line carries a time estimate: `<!-- time: ~3 hours -->`, followed by
+   a one-line outcome for the site's landing page:
+   `<!-- outcome: Map a network and choose the right scan. -->`.
 3. **Stay legal and in scope.** Examples target only the lab (`10.77.0.0/24`),
    `127.0.0.1`, or documentation ranges (`192.0.2.0/24`, `example.com`). Never
    name real third-party targets. Keep the authorization warnings at the top
