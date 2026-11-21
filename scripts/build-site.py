@@ -798,7 +798,33 @@ def write(out: Path, url: str, content: str) -> None:
     target.write_text(content, encoding="utf-8", newline="\n")
 
 
+def is_previous_build(out: Path) -> bool:
+    """True if `out` holds a manifest.json written by this script for this repo."""
+    try:
+        manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(manifest, dict) and isinstance(manifest.get("site"), dict) \
+        and manifest["site"].get("repo") == REPO
+
+
+def check_out_dir(repo: Path, out: Path, site_src: Path) -> None:
+    """Refuse output directories whose contents must not be deleted."""
+    out, repo, site_src = out.resolve(), repo.resolve(), site_src.resolve()
+    for protected, what in ((repo, "the repository"), (site_src, "the site sources")):
+        if out == protected or out in protected.parents:
+            raise SystemExit(f"error: refusing to build into {out}: it contains {what}")
+    if site_src in out.parents:
+        raise SystemExit(f"error: refusing to build into {out}: it is inside the site sources")
+    if out.exists() and not out.is_dir():
+        raise SystemExit(f"error: refusing to build into {out}: it is not a directory")
+    if out.is_dir() and any(out.iterdir()) and not is_previous_build(out):
+        raise SystemExit(f"error: refusing to empty {out}: it is not empty and has no "
+                         "manifest.json from a previous build. Pick a new or empty directory.")
+
+
 def build(repo: Path, out: Path, site_src: Path) -> Dict:
+    check_out_dir(repo, out, site_src)
     # Empty (rather than delete) the output dir so a preview server running
     # inside it survives rebuilds.
     out.mkdir(parents=True, exist_ok=True)

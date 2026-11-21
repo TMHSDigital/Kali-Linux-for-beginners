@@ -274,3 +274,39 @@ def test_filename_link_text_becomes_page_title(site_builder, tmp_path):
 
 def test_404_has_suggestion_slot(built):
     assert '<div id="suggest" hidden>' in read(built[0], "404.html")
+
+
+# --- the output directory guard ------------------------------------------------
+def test_rebuild_into_previous_output_works(built, site_builder):
+    out, _ = built
+    (out / "stale.txt").write_text("old")
+    site_builder.build(out.parent / "repo", out, REPO_ROOT / "site")
+    assert not (out / "stale.txt").exists() and (out / "index.html").is_file()
+
+
+@pytest.mark.parametrize("target", [".", "..", "site", "site/assets"])
+def test_refuses_repo_and_site_sources(site_builder, tmp_path, target):
+    repo = tmp_path / "repo"
+    site_src = repo / "site"
+    (site_src / "assets").mkdir(parents=True)
+    (site_src / "assets" / "keep.css").write_text("x")
+    (repo / "README.md").write_text("# Project\n")
+    with pytest.raises(SystemExit, match="refusing"):
+        site_builder.build(repo, repo / target, site_src)
+    assert (repo / "README.md").exists() and (site_src / "assets" / "keep.css").exists()
+
+
+def test_refuses_non_empty_dir_without_manifest(site_builder, tmp_path):
+    victim = tmp_path / "victim"
+    victim.mkdir()
+    (victim / "keep.txt").write_text("precious")
+    (victim / "manifest.json").write_text('{"site": {"repo": "someone/else"}}')
+    with pytest.raises(SystemExit, match="refusing to empty"):
+        site_builder.build(REPO_ROOT, victim, REPO_ROOT / "site")
+    assert (victim / "keep.txt").read_text() == "precious"
+
+
+def test_cli_refuses_repo_root(site_builder):
+    with pytest.raises(SystemExit, match="refusing"):
+        site_builder.main(["--out", "."])
+    assert (REPO_ROOT / ".git").exists()
