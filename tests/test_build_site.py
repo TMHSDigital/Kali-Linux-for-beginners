@@ -192,6 +192,28 @@ def test_code_blocks_get_header_bar(built):
     assert page.count('class="codeblock"') == 1
 
 
+def frame(site_builder, md_text):
+    html_out = site_builder.make_md().render(md_text)
+    return site_builder.PRE_RE.sub(site_builder.frame_code, html_out)
+
+
+def test_expected_output_blocks_are_marked(site_builder):
+    out = frame(site_builder, "Expected `-sn` output:\n\n```text\nHost is up.\n```\n")
+    assert '<div class="codeblock codeblock-output" data-lang="output">' in out
+    assert '<span class="codeblock-lang">expected output</span>' in out
+
+
+def test_other_text_blocks_are_not_output(site_builder):
+    # A diagram after ordinary prose, a command block after "Expected", and a text
+    # block with no paragraph before it all stay plain.
+    for md_text in ("Anatomy of a sudoers rule:\n\n```text\nuser host=(runas) cmd\n```\n",
+                    "Expected:\n\n```bash\nls\n```\n",
+                    "```text\nno lead-in\n```\n",
+                    "- Expected in a list\n\n```text\nx\n```\n"):
+        out = frame(site_builder, md_text)
+        assert "codeblock-output" not in out, md_text
+
+
 def test_toc_and_level_badges(built):
     out, _ = built
     page = read(out, "01-first-module/index.html")

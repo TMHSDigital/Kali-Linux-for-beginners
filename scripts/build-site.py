@@ -457,8 +457,23 @@ CALLOUT_RE = re.compile(r"<blockquote>\n<p><strong>([^<]+)")
 WARN_WORDS = ("legal", "authori", "warning", "sensitive", "trap", "education")
 
 
+def is_expected_output(m: re.Match) -> bool:
+    """A `text` block right after a paragraph starting "Expected" is lab output, not a command."""
+    if m.group(2) not in (None, "text", "txt", "plain"):
+        return False
+    before = m.string[:m.start()].rstrip()
+    if not before.endswith("</p>"):
+        return False
+    para = before[before.rfind("<p>") + 3:]
+    return "<p>" not in para and "</li>" not in para and plain_text(para).startswith("Expected")
+
+
 def frame_code(m: re.Match) -> str:
     """Give a code block a header bar with its language (app.js adds the copy button there)."""
+    if is_expected_output(m):
+        # Labelled so learners can tell what to type from what they should see; no copy button.
+        return ('<div class="codeblock codeblock-output" data-lang="output"><div class="codeblock-bar">'
+                f'<span class="codeblock-lang">expected output</span></div>{m.group(0)}</div>')
     lang = m.group(2) or "text"
     return (f'<div class="codeblock" data-lang="{lang}"><div class="codeblock-bar">'
             f'<span class="codeblock-lang">{lang}</span></div>{m.group(0)}</div>')

@@ -75,7 +75,8 @@
   document.querySelectorAll(".markdown .codeblock").forEach((block) => {
     const pre = block.querySelector("pre");
     const bar = block.querySelector(".codeblock-bar");
-    if (!pre || !bar) return;
+    // Expected output is there to compare against, not to paste into a shell.
+    if (!pre || !bar || block.classList.contains("codeblock-output")) return;
     const btn = el("button", { class: "copy-btn", type: "button", text: "copy",
                                "aria-label": "Copy code to clipboard" });
     btn.addEventListener("click", async () => {

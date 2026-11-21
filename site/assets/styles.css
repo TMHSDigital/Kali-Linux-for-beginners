@@ -395,6 +395,11 @@ kbd {
 }
 .codeblock-lang { color: var(--muted); font: 12px var(--font-mono); text-transform: lowercase; }
 .codeblock[data-lang="text"] .codeblock-lang { visibility: hidden; }
+/* Expected output: what the lab prints back, set apart from the commands you type */
+.codeblock-output { border-left: 3px solid var(--prompt); }
+.codeblock-output .codeblock-bar { background: var(--code-bg); }
+.codeblock-output .codeblock-lang { color: var(--prompt); text-transform: none; }
+.codeblock-output pre { color: var(--text-2); }
 .markdown pre {
   margin: 0; padding: 14px 18px 16px; overflow-x: auto;
   font-size: 13.5px; line-height: 1.65; tab-size: 4;
