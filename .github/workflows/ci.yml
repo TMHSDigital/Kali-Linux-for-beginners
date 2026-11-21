@@ -39,6 +39,8 @@ jobs:
         run: shellcheck scripts/*.sh tests/*.sh lab/*/*.sh
       - name: Setup script unit tests
         run: bash tests/test-setup-lab-env.sh
+      - name: Site JS unit tests
+        run: node --test tests/app-logic.test.js
       - name: Compose file is valid
         run: docker compose config -q
       - name: actionlint

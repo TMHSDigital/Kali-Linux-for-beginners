@@ -2,7 +2,7 @@
    site shell and search index) keeps working without a network, handy inside
    an isolated lab VM. Network-first so content is never stale when online. */
 const CACHE = "kali-beginners-__BUILD_ID__";
-const SHELL = ["./", "assets/styles.css", "assets/pygments.css", "assets/app.js",
+const SHELL = ["./", "assets/styles.css", "assets/pygments.css", "assets/logic.js", "assets/app.js",
                "assets/theme-init.js", "assets/favicon.svg", "search-index.json"];
 
 self.addEventListener("install", (e) => {

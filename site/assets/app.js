@@ -9,6 +9,8 @@
 (() => {
   "use strict";
 
+  const { prepareIndex, search: rank, moduleProgress, parseProgress: parseProgressFile,
+          PROGRESS_FILE } = window.KaliSite;  // assets/logic.js
   const $ = (sel) => document.querySelector(sel);
   const ROOT = document.body.dataset.root || "./";
   const DOC = document.body.dataset.doc || "";
@@ -160,12 +162,11 @@
     const done = new Set(store.get("done", []));
     navLinks.forEach((a) => a.classList.toggle("done", done.has(a.dataset.doc)));
     document.querySelectorAll(".module[data-section]").forEach((row) => {
-      const links = [...new Set([...row.querySelectorAll("a[href]")].map((a) => a.getAttribute("href")))];
-      const n = links.filter((h) => done.has(h)).length;
+      const p = moduleProgress([...row.querySelectorAll("a[href]")].map((a) => a.getAttribute("href")), done);
       const label = row.querySelector("[data-progress]");
       if (label) {
-        label.textContent = n ? (n === links.length ? "complete" : `${n} of ${links.length} done`) : "";
-        label.classList.toggle("is-done", n === links.length);
+        label.textContent = p.label;
+        label.classList.toggle("is-done", p.complete);
       }
     });
     const count = allDocs.filter((d) => done.has(d)).length;
@@ -224,17 +225,6 @@
     });
   }
   // Export / import, so progress can move between browsers, machines, and lab VMs.
-  const PROGRESS_FILE = "kali-beginners-progress.json";
-  function parseProgress(text) {
-    let data;
-    try { data = JSON.parse(text); } catch (_) { throw new Error("the file is not valid JSON."); }
-    const list = Array.isArray(data) ? data : data && data.done;
-    if (!Array.isArray(list)) throw new Error(`it is not a ${PROGRESS_FILE} export.`);
-    const known = new Set(allDocs);
-    const pages = list.filter((d) => typeof d === "string" && known.has(d));
-    if (!pages.length) throw new Error("it lists no pages from this course.");
-    return pages;
-  }
   const io = $(".progress-io");
   if (io) {
     io.hidden = false;
@@ -257,7 +247,7 @@
       if (!file) return;
       try {
         if (file.size > 1024 * 1024) throw new Error("the file is too large.");
-        const pages = parseProgress(await file.text());
+        const pages = parseProgressFile(await file.text(), allDocs);
         store.set("done", [...new Set([...store.get("done", []), ...pages])]);
         renderProgress();
         say(`Imported ${pages.length} completed page(s).`);
@@ -292,8 +282,7 @@
       loading = fetch(ROOT + "search-index.json")
         .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
         .then((data) => {
-          index = data.map((d) => ({ ...d, lower: d.text.toLowerCase(),
-                                     titleLower: d.title.toLowerCase() }));
+          index = prepareIndex(data);
           return index;
         })
         .catch(() => { loading = null; return []; });
@@ -301,52 +290,7 @@
     return loading;
   }
 
-  function snippet(text, lower, term) {
-    const i = lower.indexOf(term);
-    if (i < 0) return { before: text.slice(0, 120), match: "", after: "" };
-    const start = Math.max(0, i - 50);
-    return {
-      before: (start > 0 ? "…" : "") + text.slice(start, i),
-      match: text.slice(i, i + term.length),
-      after: text.slice(i + term.length, i + term.length + 70) + "…",
-    };
-  }
-
-  // The heading of the section that contains text offset `pos` (null = above the first heading).
-  function sectionAt(d, pos) {
-    let id = "";
-    for (const [pid, start] of d.parts || []) { if (start <= pos) id = pid; else break; }
-    return id ? d.headings.find((h) => h.id === id) || null : null;
-  }
-
-  function search(q) {
-    const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
-    if (!terms.length || !index) return [];
-    const phrase = terms.join(" ");
-    return index
-      .map((d) => {
-        let score = 0;
-        for (const t of terms) {
-          const inTitle = d.titleLower.includes(t);
-          const heading = d.headings.find((h) => h.text.toLowerCase().includes(t));
-          const count = d.lower.split(t).length - 1;
-          if (!inTitle && !heading && !count) return null;
-          score += (inTitle ? 50 : 0) + (heading ? 20 : 0) + Math.min(count, 10);
-        }
-        // Prefer the whole query as typed ("nmap -sS"), then the first word on its own.
-        const phraseAt = terms.length > 1 ? d.lower.indexOf(phrase) : -1;
-        if (phraseAt >= 0) score += 25;
-        const key = phraseAt >= 0 ? phrase : terms[0];
-        const at = phraseAt >= 0 ? phraseAt : d.lower.indexOf(terms[0]);
-        // Link to a heading that names the term, else to the section the text match sits in.
-        const heading = d.headings.find((h) => h.text.toLowerCase().includes(key))
-          || (at >= 0 ? sectionAt(d, at) : null);
-        return { d, score, heading, snip: snippet(d.text, d.lower, key) };
-      })
-      .filter(Boolean)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10);
-  }
+  const search = (q) => rank(index, q);  // ranking lives in assets/logic.js
 
   function hrefFor(r) {
     return ROOT + r.d.url + (r.heading ? "#" + r.heading.id : "");

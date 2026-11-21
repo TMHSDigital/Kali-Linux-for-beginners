@@ -77,6 +77,7 @@ pip install -r requirements-dev.txt
 ruff check scripts tests
 pytest -q
 bash tests/test-setup-lab-env.sh   # setup script's subnet guard; no Docker needed
+node --test tests/app-logic.test.js  # site search and progress logic; Node 18+
 python scripts/build-site.py --out _site && (cd _site && python -m http.server 8099)
 ```
 

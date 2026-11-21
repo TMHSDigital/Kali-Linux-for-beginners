@@ -680,6 +680,7 @@ def page_html(*, title: str, description: str, url: str, body: str, sections: Li
       <p class="footer-credit">Built by <a href="https://github.com/TMHSDigital" rel="noopener">TMHSDigital</a></p>
     </div>
   </footer>
+  <script src="{p}assets/logic.js"></script>
   <script src="{p}assets/app.js"></script>
 </body>
 </html>

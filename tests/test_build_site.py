@@ -341,6 +341,14 @@ def test_untracked_markdown_is_not_published(site_builder, tmp_path):
     assert site_builder.untracked_markdown(repo) == ["notes/private.md"]
 
 
+def test_logic_js_loads_before_app_js(built):
+    out = built[0]
+    page = read(out, "01-first-module/index.html")
+    assert page.index('assets/logic.js"></script>') < page.index('assets/app.js"></script>')
+    assert (out / "assets" / "logic.js").is_file()
+    assert '"assets/logic.js"' in read(out, "sw.js")  # cached for offline use
+
+
 def test_progress_export_import_controls(built):
     page = read(built[0], "01-first-module/index.html")
     assert '<div class="progress-io" hidden>' in page  # shown by app.js only

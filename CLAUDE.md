@@ -11,7 +11,8 @@ Markdown. See CONTRIBUTING.md for the full guide; the essentials:
   (10.77.0.10), ftp-service (10.77.0.20) on `10.77.0.0/24`.
 - `scripts/setup-lab-env.sh` (lab launcher), `scripts/parse-nmap-xml.py`
   (stdlib only), `scripts/build-site.py` (markdown-it-py + Pygments).
-- `tests/`: pytest for the Python scripts, `tests/lab-smoke.sh` for the lab.
+- `tests/`: pytest for the Python scripts, `tests/lab-smoke.sh` for the lab,
+  `node --test tests/app-logic.test.js` for the site JS in `site/assets/logic.js`.
 
 ## Content rules
 - Tag commands by depth: `[Level 0: Fundamental]`, `[Level 1: Intermediate]`,
