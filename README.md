@@ -62,6 +62,7 @@ cd Kali-Linux-for-beginners
 Stop the lab with `./scripts/setup-lab-env.sh down` (or `docker compose down`).
 To start over with pristine targets (say, after uploading files to the FTP server),
 run `./scripts/setup-lab-env.sh reset`. Your files in `workspace/` are kept.
+If the lab won't start, see [Lab troubleshooting](guides/lab-troubleshooting.md).
 
 **No Docker? Use Codespaces.** Click the **Codespaces** badge at the top. You get a
 browser-based VS Code where the lab builds and starts on its own (the first

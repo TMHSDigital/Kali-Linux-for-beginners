@@ -5,6 +5,9 @@ body:
   - type: markdown
     attributes:
       value: |
+        Before filing, check the [lab troubleshooting guide](https://github.com/TMHSDigital/Kali-Linux-for-beginners/blob/main/guides/lab-troubleshooting.md):
+        it covers Docker not running, subnet conflicts, ports already in use, and Docker Desktop reachability.
+
         The targets are insecure **on purpose** (cleartext HTTP/FTP, anonymous FTP).
         Please report isolation problems privately via SECURITY.md instead of here.
   - type: textarea
