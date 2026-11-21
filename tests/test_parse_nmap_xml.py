@@ -3,11 +3,14 @@ from __future__ import annotations
 import csv
 import io
 import json
+import os
+import subprocess
+import sys
 import xml.etree.ElementTree as ET
 
 import pytest
 
-from conftest import FIXTURES
+from conftest import FIXTURES, REPO_ROOT
 
 
 def hosts_from(parser_mod, name, keep_all_states=False):
@@ -131,3 +134,38 @@ def test_not_nmap_xml(nmap_parser, tmp_path):
     other.write_text("<rss><channel/></rss>")
     with pytest.raises(SystemExit, match="not Nmap XML"):
         nmap_parser.main([str(other)])
+
+
+def test_directory_is_a_clean_error(nmap_parser, tmp_path):
+    with pytest.raises(SystemExit, match="error: cannot read"):
+        nmap_parser.main([str(tmp_path)])
+
+
+BAD_PORTID = """<?xml version="1.0"?>
+<nmaprun><host><status state="up"/><address addr="10.77.0.10" addrtype="ipv4"/>
+<ports>
+<port protocol="tcp" portid="eighty"><state state="open"/></port>
+<port protocol="tcp" portid="22"><state state="open"/><service name="ssh"/></port>
+</ports></host></nmaprun>
+"""
+
+
+def test_bad_portid_is_skipped_with_warning(nmap_parser, tmp_path, capsys):
+    xml = tmp_path / "bad.xml"
+    xml.write_text(BAD_PORTID)
+    rc = nmap_parser.main([str(xml), "--format", "csv"])
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert "invalid portid 'eighty'" in captured.err
+    assert "22" in captured.out and "eighty" not in captured.out
+
+
+def test_unencodable_output_does_not_crash(tmp_path):
+    xml = tmp_path / "uni.xml"
+    xml.write_text(BAD_PORTID.replace('name="ssh"', 'name="ssh" product="Сервер"'),
+                   encoding="utf-8")
+    env = dict(os.environ, PYTHONIOENCODING="cp1252", PYTHONUTF8="0")
+    proc = subprocess.run([sys.executable, str(REPO_ROOT / "scripts" / "parse-nmap-xml.py"),
+                           str(xml), "--no-color"], capture_output=True, env=env)
+    assert proc.returncode == 0, proc.stderr.decode("utf-8", "replace")
+    assert b"Traceback" not in proc.stderr

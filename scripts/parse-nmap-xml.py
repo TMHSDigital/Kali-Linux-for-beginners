@@ -122,10 +122,17 @@ def parse_hosts(root: ET.Element, keep_all_states: bool) -> List[Host]:
                 ):
                     continue
 
+                try:
+                    portid = int(port_el.get("portid", "0"))
+                except ValueError:
+                    print(f"warning: skipping port with invalid portid "
+                          f"{port_el.get('portid')!r} on {address}", file=sys.stderr)
+                    continue
+
                 svc_el = port_el.find("service")
                 ports.append(
                     Port(
-                        portid=int(port_el.get("portid", "0")),
+                        portid=portid,
                         protocol=port_el.get("protocol", ""),
                         state=state,
                         service=_text(svc_el, "name", ""),
@@ -301,6 +308,8 @@ def load_xml(path: str) -> ET.Element:
         return tree.getroot()
     except FileNotFoundError:
         sys.exit(f"error: file not found: {path}")
+    except OSError as exc:  # a directory, no permission, ...
+        sys.exit(f"error: cannot read {path}: {exc.strerror or exc}")
     except ET.ParseError as exc:
         sys.exit(f"error: could not parse XML ({exc}). "
                  f"Was it produced with 'nmap -oX'?")
@@ -308,6 +317,11 @@ def load_xml(path: str) -> ET.Element:
 
 def main(argv: Optional[List[str]] = None) -> int:
     args = build_parser().parse_args(argv)
+    # Scan data can hold characters the console code page lacks (cp1252 on
+    # Windows); print a replacement character instead of crashing.
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if reconfigure is not None:
+        reconfigure(errors="replace")
     root = load_xml(args.xml)
 
     if root.tag != "nmaprun":
