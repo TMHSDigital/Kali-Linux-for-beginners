@@ -56,8 +56,8 @@ appears in the navigation automatically, titled by its first `#` heading.
 
 ## Changing the lab
 
-Lab images live in `lab/<service>/`. Pin base images by digest (Dependabot
-keeps them current). Targets keep `cap_drop: [ALL]` plus only the capabilities
+Lab images live in `lab/<service>/`. Pin base images by digest and bump them
+by hand when updating. Targets keep `cap_drop: [ALL]` plus only the capabilities
 they need, and ports bind to `127.0.0.1` only. After any lab change:
 
 ```bash
