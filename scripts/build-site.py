@@ -201,6 +201,26 @@ def compose_ips(compose: Path) -> Dict[str, str]:
     return ips
 
 
+def compose_ports(compose: Path) -> Dict[str, List[Tuple[str, str, str]]]:
+    """service -> [(host ip, host port, container port)] for single published ports (ranges skipped)."""
+    ports: Dict[str, List[Tuple[str, str, str]]] = {}
+    service = None
+    for line in read_text(compose).splitlines():
+        m = re.match(r"^  ([\w.-]+):\s*$", line)
+        if m:
+            service = m.group(1)
+            continue
+        m = re.match(r"""^\s+-\s*["']?([\d.]+):(\d+):(\d+)["']?\s*$""", line)
+        if m and service:
+            ports.setdefault(service, []).append(m.groups())
+    return ports
+
+
+def lab_ports(repo: Path) -> Dict[str, List[Tuple[str, str, str]]]:
+    compose = repo / "docker-compose.yml"
+    return compose_ports(compose if compose.exists() else REPO_ROOT / "docker-compose.yml")
+
+
 def lab_hosts(repo: Path) -> List[Tuple[str, str, str, str]]:
     """LAB_HOSTS with each address from the repo's docker-compose.yml."""
     compose = repo / "docker-compose.yml"
@@ -873,8 +893,64 @@ def hero_terminal() -> str:
           </figure>"""
 
 
+def lab_map(hosts_list: List[Tuple[str, str, str, str]],
+            ports: Dict[str, List[Tuple[str, str, str]]]) -> str:
+    """The lab as a picture: your computer, the bridge network, and the three containers.
+    Everything on it comes from docker-compose.yml, like the table below it."""
+    W, BOX_W, BOX_H, GAP, TOP, BUS = 962, 200, 100, 30, 180, 130
+    subnet = ".".join(hosts_list[0][1].split(".")[:3]) + ".0/24"
+    parts = ['<defs><marker id="lm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" '
+             'markerHeight="7" orient="auto-start-reverse"><path class="lm-arrowhead" d="M0 0 10 5 0 10z"/>'
+             '</marker></defs>']
+    # Your computer, left.
+    parts.append(f'<rect class="lm-box lm-you" x="1" y="{TOP}" width="230" height="{BOX_H}" rx="8"/>'
+                 f'<text class="lm-name" x="20" y="{TOP + 32}">Your computer</text>'
+                 f'<text class="lm-note" x="20" y="{TOP + 56}">runs Docker</text>'
+                 f'<text class="lm-note" x="20" y="{TOP + 78}">workspace/ is /root/work</text>')
+    first_x = 300
+    last_x = first_x + len(hosts_list) * (BOX_W + GAP) - GAP
+    parts.append(f'<line class="lm-bus" x1="{first_x}" y1="{BUS}" x2="{last_x}" y2="{BUS}"/>'
+                 f'<text class="lm-net" x="{first_x}" y="{BUS - 14}">pentest-lab-net &#183; {esc(subnet)}</text>')
+    forwards = []
+    for i, (name, ip, role, _) in enumerate(hosts_list):
+        x = first_x + i * (BOX_W + GAP)
+        cx = x + BOX_W // 2
+        published = ports.get(name, [])
+        detail = esc(role) + (f" &#183; {esc(published[0][2])}/tcp" if published else "")
+        parts.append(f'<line class="lm-link" x1="{cx}" y1="{BUS}" x2="{cx}" y2="{TOP}"/>'
+                     f'<rect class="lm-box" x="{x}" y="{TOP}" width="{BOX_W}" height="{BOX_H}" rx="8"/>'
+                     f'<text class="lm-name" x="{x + 18}" y="{TOP + 32}">{esc(name)}</text>'
+                     f'<text class="lm-ip" x="{x + 18}" y="{TOP + 56}">{esc(ip)}</text>'
+                     f'<text class="lm-note" x="{x + 18}" y="{TOP + 78}">{detail}</text>')
+        if i == 0:
+            # You reach the attacker with a shell, not over the network.
+            parts.append(f'<line class="lm-shell" x1="231" y1="{TOP + BOX_H // 2}" x2="{x - 4}" '
+                         f'y2="{TOP + BOX_H // 2}" marker-end="url(#lm-arrow)"/>'
+                         f'<text class="lm-tag" x="{(231 + x) // 2}" y="{TOP + BOX_H // 2 - 8}" '
+                         f'text-anchor="middle">shell</text>')
+        for host_ip, host_port, _ in published[:1]:
+            forwards.append((x + BOX_W - 36, f"{host_ip}:{host_port}"))  # clear of the network stub
+    if forwards:
+        # Published ports: the targets also answer on localhost.
+        y0 = 40
+        last = forwards[-1][0]
+        parts.append(f'<path class="lm-forward" d="M115 {TOP} V{y0} H{last}"/>')
+        for fx, label in forwards:
+            parts.append(f'<path class="lm-forward" d="M{fx} {y0} V{TOP - 4}" marker-end="url(#lm-arrow)"/>'
+                         f'<text class="lm-tag lm-port" x="{fx - 10}" y="{y0 + 40}" '
+                         f'text-anchor="end">{esc(label)}</text>')
+    names = ", ".join(f"{n} at {ip}" for n, ip, _, _ in hosts_list)
+    fwd = " and ".join(label for _, label in forwards)
+    desc = (f"Three containers on the {subnet} bridge network: {names}. From your computer you open a "
+            f"shell on {hosts_list[0][0]}" + (f"; the targets are also published on {fwd}." if fwd else "."))
+    return (f'<svg class="lab-map" viewBox="0 0 {W} {TOP + BOX_H + 2}" role="img" '
+            f'aria-labelledby="lab-map-t lab-map-d"><title id="lab-map-t">Lab network map</title>'
+            f'<desc id="lab-map-d">{esc(desc)}</desc>{"".join(parts)}</svg>')
+
+
 def landing_body(sections: List[Dict], docs_meta: Dict[str, Dict],
-                 hosts_list: List[Tuple[str, str, str, str]]) -> str:
+                 hosts_list: List[Tuple[str, str, str, str]],
+                 ports: Optional[Dict[str, List[Tuple[str, str, str]]]] = None) -> str:
     modules = [s for s in sections if is_module(s)]
     others = [s for s in sections if s["id"] != "home" and not is_module(s)]
     first = first_module_url(sections)
@@ -951,6 +1027,7 @@ def landing_body(sections: List[Dict], docs_meta: Dict[str, Dict],
             an isolated bridge network, <code>10.77.0.0/24</code>. Every example in the course runs against
             it. No Docker? <a href="https://codespaces.new/{REPO}" rel="noopener">Open the repo in
             Codespaces</a> and run the same commands there.</p>
+          {lab_map(hosts_list, ports or {})}
           <div class="table-wrap"><table class="hosts">
             <thead><tr><th scope="col">Host</th><th scope="col">Address</th><th scope="col">Service</th>
               <th scope="col">What it is for</th></tr></thead>
@@ -1052,7 +1129,7 @@ def build(repo: Path, out: Path, site_src: Path) -> Dict:
                        "headings": r["headings"], "text": r["text"], "parts": r["parts"]})
 
     write(out, "", page_html(title=SITE_TITLE, description=SITE_TAGLINE, url="",
-                             body=landing_body(sections, rendered_all, lab_hosts(repo)),
+                             body=landing_body(sections, rendered_all, lab_hosts(repo), lab_ports(repo)),
                              page_class="page-landing", **common))
 
     base_path = urlsplit(SITE_URL).path  # 404 is served at any depth: absolute paths

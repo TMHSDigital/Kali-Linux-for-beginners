@@ -359,6 +359,23 @@ def test_glossary_entries_get_anchors_and_definitions_stay_out_of_search(glossar
     assert "Write BPF here" in entry["text"]
 
 
+def test_compose_ports_reads_single_published_ports(site_builder):
+    ports = site_builder.compose_ports(REPO_ROOT / "docker-compose.yml")
+    assert ports["web-target"] == [("127.0.0.1", "8080", "80")]
+    # The passive FTP range is plumbing, not something a learner connects to.
+    assert ports["ftp-service"] == [("127.0.0.1", "2121", "21")]
+    assert "attacker" not in ports
+
+
+def test_landing_page_lab_map(built):
+    page = read(built[0], "index.html")
+    svg = page[page.index('<svg class="lab-map"'):page.index("</svg>", page.index('<svg class="lab-map"'))]
+    assert 'role="img"' in svg and "<title" in svg and "<desc" in svg
+    for text in ("10.77.0.0/24", "10.77.0.5", "10.77.0.10", "10.77.0.20", "127.0.0.1:8080", "127.0.0.1:2121"):
+        assert text in svg, text
+    assert "style=" not in svg  # the CSP forbids inline styles
+
+
 def test_404_has_suggestion_slot(built):
     assert '<div id="suggest" hidden>' in read(built[0], "404.html")
 
