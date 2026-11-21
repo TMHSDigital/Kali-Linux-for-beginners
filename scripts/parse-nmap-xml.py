@@ -7,7 +7,7 @@ protocol, state, service name, product, and version. ``--format`` switches the
 output to Markdown (paste straight into a report), CSV, or JSON.
 
 Standard library only (``xml.etree.ElementTree`` + ``argparse``); no pip
-installs required; it runs anywhere Python 3.7+ is available.
+installs required; it runs anywhere Python 3.8+ is available.
 
 Examples
 --------

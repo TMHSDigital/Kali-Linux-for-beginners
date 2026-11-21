@@ -8,5 +8,5 @@ line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "B", "UP"]
-# The scripts keep their one-line Palette helpers and typing.List style for 3.7+.
+# The scripts keep their one-line Palette helpers and typing.List style for 3.8+ (the minimum the learner scripts support).
 ignore = ["E701", "UP006", "UP007", "UP035", "UP045"]

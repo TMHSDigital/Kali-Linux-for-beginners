@@ -33,6 +33,7 @@ import json
 import posixpath
 import re
 import shutil
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -189,12 +190,29 @@ def sort_items(items: List[Dict]) -> List[Dict]:
     return sorted(items, key=key)
 
 
+def markdown_files(repo: Path) -> List[Path]:
+    """Markdown files tracked by git, so local scratch notes are never published.
+
+    Falls back to every *.md on disk when `repo` is not the root of a git checkout (a
+    downloaded zip, say, even one inside some other repository) or git is missing.
+    """
+    if not (repo / ".git").exists():
+        return sorted(repo.rglob("*.md"))
+    try:
+        listed = subprocess.run(["git", "-C", str(repo), "ls-files", "-z", "--", "*.md"],
+                                capture_output=True, check=True).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return sorted(repo.rglob("*.md"))
+    paths = (repo / p for p in listed.decode("utf-8").split("\0") if p)
+    return sorted(p for p in paths if p.is_file())
+
+
 def discover(repo: Path) -> List[Dict]:
     """Build the ordered list of sections with their Markdown items."""
     root_items: List[Dict] = []
     dir_sections: Dict[str, Dict] = {}
 
-    for md in repo.rglob("*.md"):
+    for md in markdown_files(repo):
         rel_parts = md.relative_to(repo).parts
         if any(part in EXCLUDE_DIRS for part in rel_parts) or md.name in EXCLUDE_FILES:
             continue

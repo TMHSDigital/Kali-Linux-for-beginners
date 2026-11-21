@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 
 import pytest
 
@@ -326,3 +327,14 @@ def test_report_problem_link_is_url_encoded(site_builder, tmp_path):
     site_builder.build(repo, out, REPO_ROOT / "site")
     page = read(out, "03-recon/index.html")
     assert "issues/new?title=Docs%3A+03%3A+Network+Recon+%26+Nmap+%231%2B\"" in page
+
+
+def test_untracked_markdown_is_not_published(site_builder, tmp_path):
+    repo = tmp_path / "repo"
+    (repo / "notes").mkdir(parents=True)
+    (repo / "README.md").write_text("# Project\n")
+    (repo / "notes" / "private.md").write_text("# Private\n")
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    subprocess.run(["git", "-C", str(repo), "add", "README.md"], check=True)
+    result = site_builder.build(repo, tmp_path / "_site", REPO_ROOT / "site")
+    assert [d["path"] for d in result["docs"]] == ["README.md"]
