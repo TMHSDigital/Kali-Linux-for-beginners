@@ -78,6 +78,12 @@ LAB_HOSTS = [
     ("web-target", "nginx, plain HTTP", "A login form that sends credentials in cleartext."),
     ("ftp-service", "vsftpd", "Anonymous and labuser/labpass logins, all cleartext."),
 ]
+# The glossary: its terms are explained in place where a page first uses them.
+GLOSSARY_PATH = "guides/glossary.md"
+# Everyday words that the text also uses in other senses ("repo root", "a group of
+# flags"); they stay on the glossary page but are not marked automatically.
+GLOSSARY_NO_AUTO = {"Filtered", "Group", "Port", "Root", "Shell"}
+GLOSSARY_ENTRY_RE = re.compile(r"^\*\*(.+?)\.\*\*[ \t]*(.*?)(?=\n\s*\n|\Z)", re.M | re.S)
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; "
        "img-src 'self' data: https:; connect-src 'self'; font-src 'self'; "
        "object-src 'none'; base-uri 'self'; form-action 'none'")
@@ -318,6 +324,31 @@ def make_md() -> MarkdownIt:
     return md
 
 
+def glossary_terms(text: str) -> List[Dict]:
+    """'**BPF (Berkeley Packet Filter).** Definition. See [...]' entries -> id, names, definition."""
+    terms = []
+    for m in GLOSSARY_ENTRY_RE.finditer(text):
+        name = m.group(1).strip()
+        base, _, paren = name.partition(" (")
+        paren = paren.rstrip(")")
+        names = [base]
+        # "(Berkeley Packet Filter)" and "(deauth)" are other names; "(port state)" or
+        # "(Protected Management Frames, 802.11w)" are qualifiers.
+        if paren and "," not in paren and paren != "port state":
+            names.append(paren)
+        definition = re.split(r"\s*\bSee \[", m.group(2))[0]
+        definition = re.sub(r"[`*_]", "", re.sub(r"\s+", " ", definition)).strip()
+        terms.append({"id": "term-" + github_slug(base, {}), "names": names,
+                      "definition": definition, "auto": base not in GLOSSARY_NO_AUTO})
+    return terms
+
+
+def term_pattern(name: str) -> re.Pattern:
+    """Whole-word match; acronyms (BPF, SUID, WPA3) only in their own case, other terms in any."""
+    flags = 0 if any(c.isupper() for c in name[1:]) else re.IGNORECASE
+    return re.compile(r"(?<![\w/.-])" + re.escape(name) + r"(?![\w-])", flags)
+
+
 class Renderer:
     """Renders one repo's Markdown with build-time link and anchor rewriting."""
 
@@ -325,6 +356,52 @@ class Renderer:
         self.repo = repo
         self.docs = docs          # rel md path -> entry
         self.md = make_md()
+        self.terms: List[Dict] = []
+        if GLOSSARY_PATH in docs:
+            self.terms = glossary_terms(read_text(repo / GLOSSARY_PATH))
+            for t in self.terms:
+                t["patterns"] = [term_pattern(n) for n in t["names"]]
+
+    def mark_terms(self, kids: List[Token], from_url: str, used: set) -> List[Token]:
+        """Explain the first use of each glossary term on a page: a link to its entry plus a
+        hover/focus definition. Text inside links and code is never touched."""
+        out: List[Token] = []
+        depth = 0
+        gloss_url = self.docs[GLOSSARY_PATH]["url"]
+        for child in kids:
+            if child.type == "link_open":
+                depth += 1
+            elif child.type == "link_close":
+                depth -= 1
+            if child.type != "text" or depth:
+                out.append(child)
+                continue
+            text = child.content
+            while True:
+                best = None
+                for t in self.terms:
+                    if not t["auto"] or t["id"] in used:
+                        continue
+                    for p in t["patterns"]:
+                        m = p.search(text)
+                        if m and (best is None or m.start() < best[1].start()):
+                            best = (t, m)
+                if not best:
+                    break
+                t, m = best
+                used.add(t["id"])
+                if m.start():
+                    out.append(Token("text", "", 0, content=text[:m.start()]))
+                tip = Token("html_inline", "", 0)
+                href = rel_href(from_url, gloss_url) + "#" + t["id"]
+                tip.content = (f'<span class="term"><a href="{esc(href)}" aria-describedby="tip-{t["id"]}">'
+                               f'{esc(m.group(0))}</a><span class="term-def" id="tip-{t["id"]}" '
+                               f'role="tooltip">{esc(t["definition"])}</span></span>')
+                out.append(tip)
+                text = text[m.end():]
+            if text:
+                out.append(Token("text", "", 0, content=text))
+        return out
 
     def doc_target(self, from_rel: str, href: str) -> Optional[str]:
         """The published doc a relative Markdown link points at, if any."""
@@ -359,6 +436,7 @@ class Renderer:
         seen: Dict[str, int] = {}
         headings: List[Dict] = []
         toc: List[Dict] = []
+        used_terms: set = set()
         description = ""
         for i, tok in enumerate(tokens):
             if tok.type == "heading_open":
@@ -385,6 +463,13 @@ class Renderer:
                     inline.children.append(anchor)
             elif tok.type == "paragraph_open" and not description:
                 description = tokens[i + 1].content
+            if rel == GLOSSARY_PATH and tok.type == "paragraph_open":
+                # Each "**Term.** ..." entry gets the anchor that marked terms link to.
+                kids = [k for k in tokens[i + 1].children or [] if k.type != "text" or k.content]
+                if len(kids) > 1 and kids[0].type == "strong_open" and kids[1].type == "text":
+                    term_id = "term-" + github_slug(kids[1].content.rstrip(".").partition(" (")[0], {})
+                    if any(t["id"] == term_id for t in self.terms):
+                        tok.attrSet("id", term_id)
             if tok.type == "inline":
                 kids = tok.children or []
                 for k, child in enumerate(kids):
@@ -408,6 +493,8 @@ class Renderer:
                             child.attrSet("src", f"https://raw.githubusercontent.com/{REPO}/"
                                                  f"{BRANCH}/" + posixpath.normpath(
                                                      posixpath.join(posixpath.dirname(rel), src)))
+                if self.terms and rel != GLOSSARY_PATH and tokens[i - 1].type != "heading_open":
+                    tok.children = self.mark_terms(kids, entry["url"], used_terms)
         body = self.md.renderer.render(tokens, self.md.options, {})
         # Table alignment comes out as inline styles; the CSP forbids those.
         body = re.sub(r' style="text-align:(left|center|right)"', r' class="align-\1"', body)
@@ -449,7 +536,8 @@ HEADING_ID_RE = re.compile(r'<h[2-6] id="([^"]+)"')
 
 def plain_text(fragment: str) -> str:
     """Rendered HTML -> the single-spaced text the search index holds."""
-    text = re.sub(r'<a class="anchor"[^>]*>#</a>|\[!(?:NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]', "", fragment)
+    text = re.sub(r'<a class="anchor"[^>]*>#</a>|\[!(?:NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]'
+                  r'|<span class="term-def"[^>]*>[^<]*</span>', "", fragment)
     text = re.sub(r"</(p|li|h[1-6]|td|th|tr|pre|blockquote|div)>|<br\s*/?>", " ", text)
     return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", "", text))).strip()
 ALERT_RE = re.compile(r"<blockquote>\n<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*")

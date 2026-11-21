@@ -117,6 +117,20 @@
   const tocInline = $(".toc-inline");
   if (tocInline) tocInline.addEventListener("click", (e) => { if (e.target.closest("a")) tocInline.open = false; });
 
+  /* ---------------- Glossary definitions: Escape hides the open one ---------------- */
+  const terms = [...document.querySelectorAll(".markdown .term")];
+  if (terms.length) {
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      terms.filter((t) => t.matches(":hover, :focus-within")).forEach((t) => t.classList.add("dismissed"));
+    });
+    terms.forEach((t) => {
+      const reset = () => t.classList.remove("dismissed");
+      t.addEventListener("mouseleave", reset);
+      t.addEventListener("focusout", reset);
+    });
+  }
+
   /* ---------------- Heading links: clicking "#" also copies the URL ---------------- */
   document.querySelectorAll(".markdown .anchor").forEach((a) => {
     a.addEventListener("click", () => {

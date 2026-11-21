@@ -301,6 +301,64 @@ def test_filename_link_text_becomes_page_title(site_builder, tmp_path):
     assert '<a href="extra/">the extras</a>' in page  # real link text is left alone
 
 
+GLOSSARY_MD = """# Glossary
+
+Plain-English definitions.
+
+**BPF (Berkeley Packet Filter).** The capture filter language used by
+`tcpdump`. See [module 05](../01-mod/README.md).
+
+**Monitor mode.** A Wi-Fi card mode that hears every frame.
+See [module 04](../01-mod/README.md).
+
+**Root.** The superuser.
+"""
+
+
+def test_glossary_terms_parsed(site_builder):
+    terms = site_builder.glossary_terms(GLOSSARY_MD)
+    by_id = {t["id"]: t for t in terms}
+    assert set(by_id) == {"term-bpf", "term-monitor-mode", "term-root"}
+    assert by_id["term-bpf"]["names"] == ["BPF", "Berkeley Packet Filter"]
+    assert by_id["term-bpf"]["definition"] == "The capture filter language used by tcpdump."
+    # Everyday words with other meanings are defined on the glossary page but never auto-marked.
+    assert by_id["term-root"]["auto"] is False and by_id["term-bpf"]["auto"] is True
+
+
+@pytest.fixture
+def glossary_site(site_builder, tmp_path):
+    repo = tmp_path / "repo"
+    (repo / "01-mod").mkdir(parents=True)
+    (repo / "guides").mkdir()
+    (repo / "guides" / "glossary.md").write_text(GLOSSARY_MD)
+    (repo / "01-mod" / "README.md").write_text(
+        "# 01: Mod\n\n## BPF basics\n\nWrite BPF here, then BPF again. Use `BPF` in code.\n\n"
+        "Put the card in monitor mode. [BPF](../guides/glossary.md) is linked already.\n\n"
+        "The repo root is not a term.\n")
+    out = tmp_path / "_site"
+    site_builder.build(repo, out, REPO_ROOT / "site")
+    return out
+
+
+def test_first_use_of_a_term_links_to_its_definition(glossary_site):
+    page = read(glossary_site, "01-mod/index.html")
+    assert page.count('class="term"') == 2  # BPF once, monitor mode once
+    assert ('<span class="term"><a href="../guides/glossary/#term-bpf" aria-describedby="tip-term-bpf">BPF</a>'
+            '<span class="term-def" id="tip-term-bpf" role="tooltip">The capture filter language used by '
+            'tcpdump.</span></span> here, then BPF again.') in page
+    assert '#term-monitor-mode" aria-describedby="tip-term-monitor-mode">monitor mode</a>' in page
+    assert 'id="bpf-basics">BPF basics' in page  # headings are left alone
+    assert "#term-root" not in page
+
+
+def test_glossary_entries_get_anchors_and_definitions_stay_out_of_search(glossary_site):
+    glossary = read(glossary_site, "guides/glossary/index.html")
+    assert '<p id="term-monitor-mode"><strong>Monitor mode.</strong>' in glossary
+    entry = next(d for d in json.loads(read(glossary_site, "search-index.json")) if d["url"] == "01-mod/")
+    assert "capture filter language" not in entry["text"]
+    assert "Write BPF here" in entry["text"]
+
+
 def test_404_has_suggestion_slot(built):
     assert '<div id="suggest" hidden>' in read(built[0], "404.html")
 

@@ -400,6 +400,28 @@ kbd {
 .codeblock-output .codeblock-bar { background: var(--code-bg); }
 .codeblock-output .codeblock-lang { color: var(--prompt); text-transform: none; }
 .codeblock-output pre { color: var(--text-2); }
+
+/* Glossary terms: the first use on a page links to the definition, which also shows on hover/focus */
+.term { position: relative; }
+.markdown .term > a {
+  color: inherit; text-decoration: underline dotted; text-decoration-color: var(--muted);
+  text-underline-offset: 3px; text-decoration-thickness: 1px;
+}
+.markdown .term > a:hover { color: var(--accent); text-decoration-color: currentColor; }
+.term-def {
+  display: none; position: absolute; left: 0; bottom: calc(100% + 6px); z-index: 30;
+  width: max-content; max-width: min(320px, 80vw); padding: 10px 12px;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--surface); box-shadow: var(--shadow); color: var(--text);
+  font: 400 13.5px/1.5 var(--font-ui); text-align: left; white-space: normal;
+}
+.term:hover .term-def, .term:focus-within .term-def { display: block; }
+.term.dismissed .term-def { display: none; }
+/* Touch screens have no hover: a tap follows the link to the glossary instead. */
+@media (hover: none) { .term:hover .term-def { display: none; } }
+.markdown p[id^="term-"] { scroll-margin-top: calc(var(--topbar-h) + 16px); }
+.markdown p[id^="term-"]:target { background: var(--accent-soft); border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 6px var(--accent-soft); }
 .markdown pre {
   margin: 0; padding: 14px 18px 16px; overflow-x: auto;
   font-size: 13.5px; line-height: 1.65; tab-size: 4;
@@ -676,6 +698,7 @@ kbd {
 }
 
 @media print {
+  .term-def,
   .topbar, .sidebar, .toc, .toc-inline, .to-top, .scrim, .doc-actions, .pager, .site-footer, .copy-btn, .crumbs,
   .anchor { display: none !important; }
   body { background: #fff; color: #000; font-size: 11pt; }
