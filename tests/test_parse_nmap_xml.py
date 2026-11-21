@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import sys
 import xml.etree.ElementTree as ET
 
 import pytest
@@ -131,3 +132,55 @@ def test_not_nmap_xml(nmap_parser, tmp_path):
     other.write_text("<rss><channel/></rss>")
     with pytest.raises(SystemExit, match="not Nmap XML"):
         nmap_parser.main([str(other)])
+
+
+def test_directory_input_exits_cleanly(nmap_parser, tmp_path):
+    # A directory (or any unreadable path) must print an error, not a traceback.
+    with pytest.raises(SystemExit, match="cannot read"):
+        nmap_parser.main([str(tmp_path)])
+
+
+def test_non_integer_portid_is_skipped_with_warning(nmap_parser, capsys, tmp_path):
+    scan = tmp_path / "bad-portid.xml"
+    scan.write_text(
+        "<nmaprun>"
+        '<host><status state="up"/><address addr="10.77.0.10" addrtype="ipv4"/>'
+        "<ports>"
+        '<port protocol="tcp" portid="80"><state state="open"/>'
+        '<service name="http" product="nginx"/></port>'
+        '<port protocol="tcp" portid="8o0"><state state="open"/>'
+        '<service name="http"/></port>'
+        "</ports></host></nmaprun>",
+        encoding="utf-8",
+    )
+    rc = nmap_parser.main([str(scan), "--no-color"])
+    captured = capsys.readouterr()
+    out, err = captured.out, captured.err
+    assert rc == 0
+    assert "Host: 10.77.0.10" in out and "80" in out
+    assert "8o0" not in out
+    assert "non-integer portid" in err
+
+
+def test_unencodable_output_degrades_gracefully(nmap_parser, monkeypatch, tmp_path):
+    # A cp1252 console cannot encode every character in scan data; it must be
+    # replaced instead of raising UnicodeEncodeError.
+    scan = tmp_path / "unicode-host.xml"
+    scan.write_text(
+        "<nmaprun>"
+        '<host><status state="up"/><address addr="10.77.0.10" addrtype="ipv4"/>'
+        '<hostnames><hostname name="h\u0142ab.lab"/></hostnames>'
+        "<ports>"
+        '<port protocol="tcp" portid="80"><state state="open"/>'
+        '<service name="http" product="nginx"/></port>'
+        "</ports></host></nmaprun>",
+        encoding="utf-8",
+    )
+    buf = io.BytesIO()
+    console = io.TextIOWrapper(buf, encoding="cp1252", errors="strict")
+    monkeypatch.setattr(sys, "stdout", console)
+    rc = nmap_parser.main([str(scan)])
+    console.flush()
+    assert rc == 0
+    assert console.errors == "replace"
+    assert "h?ab.lab" in buf.getvalue().decode("cp1252")

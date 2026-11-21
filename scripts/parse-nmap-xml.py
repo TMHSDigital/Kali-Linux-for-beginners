@@ -123,9 +123,15 @@ def parse_hosts(root: ET.Element, keep_all_states: bool) -> List[Host]:
                     continue
 
                 svc_el = port_el.find("service")
+                try:
+                    portid = int(port_el.get("portid", "0"))
+                except ValueError:
+                    print(f"warning: skipping port with non-integer portid: "
+                          f"{port_el.get('portid', '')!r}", file=sys.stderr)
+                    continue
                 ports.append(
                     Port(
-                        portid=int(port_el.get("portid", "0")),
+                        portid=portid,
                         protocol=port_el.get("protocol", ""),
                         state=state,
                         service=_text(svc_el, "name", ""),
@@ -301,12 +307,18 @@ def load_xml(path: str) -> ET.Element:
         return tree.getroot()
     except FileNotFoundError:
         sys.exit(f"error: file not found: {path}")
+    except OSError as exc:
+        sys.exit(f"error: cannot read {path}: {exc.strerror or exc}")
     except ET.ParseError as exc:
         sys.exit(f"error: could not parse XML ({exc}). "
                  f"Was it produced with 'nmap -oX'?")
 
 
 def main(argv: Optional[List[str]] = None) -> int:
+    # Console encodings can be narrower than the scan data (e.g. cp1252 on
+    # Windows); degrade to '?' instead of crashing on those characters.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(errors="replace")
     args = build_parser().parse_args(argv)
     root = load_xml(args.xml)
 
