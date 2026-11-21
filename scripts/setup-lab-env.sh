@@ -159,8 +159,10 @@ ${C_GRN}=== Lab is up ===${C_RST}
   web-target   ${WEB_TARGET_IP}   http://${WEB_TARGET_IP}   (from your host browser: http://127.0.0.1:8080)
   ftp-service  ${FTP_TARGET_IP}   ftp://${FTP_TARGET_IP}    (from your host: ftp 127.0.0.1 2121)
 
-Only scan the ${LAB_SUBNET} range. From the attacker shell, try:
-  nmap -sn ${LAB_SUBNET}
+Only scan the targets, ${WEB_TARGET_IP} and ${FTP_TARGET_IP}. In ${LAB_SUBNET},
+10.77.0.1 is the bridge gateway (your own machine) and ${ATTACKER_IP} is the attacker.
+From the attacker shell, try:
+  nmap -sn ${LAB_SUBNET}                      # what is alive (discovery only)
   nmap -sV ${WEB_TARGET_IP} ${FTP_TARGET_IP}
 EOF
 

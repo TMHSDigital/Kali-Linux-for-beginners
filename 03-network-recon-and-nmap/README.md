@@ -111,6 +111,13 @@ Host is up.
 Nmap done: 256 IP addresses (4 hosts up) scanned in 2.49 seconds
 ```
 
+Four hosts answer, but only two are targets. `10.77.0.1` is the Docker bridge
+gateway: **your own machine** (or the Docker Desktop VM / Codespace).
+`10.77.0.5` is the attacker container you are typing in. Sweeping the `/24` with
+`-sn` to see what is alive is fine, but point port, version, OS, and script
+scans at the targets only (`10.77.0.10 10.77.0.20`), or add
+`--exclude 10.77.0.1,10.77.0.5` when you scan a range.
+
 ---
 
 ## 4. Port scan types: the core of Nmap

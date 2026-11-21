@@ -1,15 +1,27 @@
 # Nmap Scan Profiles
 
 Copy-pasteable Nmap invocations organized by **assessment scenario**. Replace
-`$T` with your authorized target (a host, a comma list, or a CIDR range). All
-examples default to the isolated lab; keep it that way unless you have written
-authorization.
+`$T` with your authorized targets and `$NET` with the network you sweep for live
+hosts. All examples default to the isolated lab; keep it that way unless you
+have written authorization.
 
 ```bash
-# Set your target once, then paste any profile below.
-T="10.77.0.0/24"      # e.g. the lab subnet
-# T="10.77.0.10 10.77.0.20"   # or specific hosts
+# Set these once, then paste any profile below.
+T="10.77.0.10,20"     # the two lab targets (Nmap reads this as .10 and .20)
+NET="10.77.0.0/24"    # the lab subnet, used only by the discovery sweeps in A
 ```
+
+> **Why not scan the whole `/24`?** Two addresses in it are not targets.
+> `10.77.0.1` is the Docker bridge gateway, which is **your own machine** (or the
+> Docker Desktop VM / Codespace), and `10.77.0.5` is the attacker container you
+> are scanning from. A ping sweep of `$NET` is harmless, but the port, version,
+> OS, and script profiles below would probe your own host's services. Keep `$T`
+> on the targets. If you need a range, exclude both:
+> `nmap ... 10.77.0.0/24 --exclude 10.77.0.1,10.77.0.5`.
+>
+> Keep `$T` free of spaces: `"$T"` is passed as one argument, and
+> `T="10.77.0.10 10.77.0.20"` fails with `Failed to resolve`. Use a comma list
+> (`10.77.0.10,20`) or a CIDR instead.
 
 > Legend for tags: `[L1]` intermediate · `[L2]` advanced/field-ops. Anything
 > using `-sS`, `-sU`, `-O`, or OS/packet features needs `sudo`.
@@ -20,16 +32,16 @@ T="10.77.0.0/24"      # e.g. the lab subnet
 
 ```bash
 # [L1] Fast ping sweep of a subnet (no port scan)
-nmap -sn "$T"
+nmap -sn "$NET"
 
 # [L1] Discovery + save a list of live hosts for later, grep the up ones
-nmap -sn "$T" -oG - | awk '/Up$/{print $2}' > live-hosts.txt
+nmap -sn "$NET" -oG - | awk '/Up$/{print $2}' > live-hosts.txt
 
 # [L2] Discovery when ICMP is filtered: probe common TCP ports for liveness
-sudo nmap -sn -PS22,80,443,3389 -PA80 "$T"
+sudo nmap -sn -PS22,80,443,3389 -PA80 "$NET"
 
 # [L2] ARP scan (fastest, most reliable on a local L2 segment; needs root)
-sudo nmap -sn -PR "$T"
+sudo nmap -sn -PR "$NET"
 ```
 
 ---

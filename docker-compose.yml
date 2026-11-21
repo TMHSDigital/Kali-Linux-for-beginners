@@ -16,7 +16,9 @@
 # Network exposure: published ports bind to 127.0.0.1 only, so nothing is
 # reachable from other machines. The containers DO have outbound internet
 # access (Docker cannot publish ports from an `internal` network). Never change
-# the port bindings to 0.0.0.0 and only scan the 10.77.0.0/24 range.
+# the port bindings to 0.0.0.0. Only scan the targets, 10.77.0.10 and
+# 10.77.0.20: in 10.77.0.0/24, .1 is the bridge gateway (your own machine) and
+# .5 is the attacker.
 # =============================================================================
 
 # Defensive hardening for the targets: they're meant to be insecure on the
