@@ -25,17 +25,14 @@
 
 Five modules take you from the Linux shell to network scanning, wireless
 attacks, and packet analysis. Every technique gives the command, the output it
-prints in the practice lab, and how a defender spots or stops it. The lab is a
-set of Docker containers on a private network: a Kali attacker and two
-deliberately insecure targets. Lab checks in modules 01 and 02 print PASS or
-FAIL so you know when you have it.
+prints in the practice lab, and how a defender spots or stops it. Lab checks in
+modules 01 and 02 print PASS or FAIL so you know when you have it.
 
-It is written for complete beginners to Linux and security. You need a laptop
-with 8 GB of RAM and Docker, or a free GitHub account to use Codespaces instead.
-Module 04's live wireless work also needs a USB Wi-Fi adapter. Plan on about 18
-hours at your own pace. It's free, needs no account or VPN, and works offline.
-It pairs well with hosted platforms like TryHackMe or Hack The Box Academy:
-learn the foundations here, then go there for more targets.
+It is written for complete beginners. You need a laptop with 8 GB of RAM and
+Docker, or a free GitHub account to use Codespaces instead. Module 04's live
+wireless work also needs a USB Wi-Fi adapter. Plan on about 18 hours. It's free,
+needs no account or VPN, and works offline. Learn the foundations here, then
+take them to hosted platforms like TryHackMe or Hack The Box Academy.
 
 > [!WARNING]
 > **For education and authorized testing only.** Using these techniques against
@@ -47,37 +44,23 @@ learn the foundations here, then go there for more targets.
 ## Quickstart
 
 ```bash
-# 1. Clone
 git clone https://github.com/TMHSDigital/Kali-Linux-for-beginners.git
 cd Kali-Linux-for-beginners
-
-# 2. Launch the practice lab (Docker required; the first run downloads Kali)
-./scripts/setup-lab-env.sh          # checks Docker + subnet, starts it, waits for health
-#   or: docker compose up -d --build
-
-# 3. Get a shell on the Kali attacker box that sits on the lab network
-./scripts/setup-lab-env.sh shell
-
-# 4. Open module 01 (or the docs site) and start
+./scripts/setup-lab-env.sh          # check Docker, start the lab
+./scripts/setup-lab-env.sh shell    # shell on the Kali attacker: start module 01 here
 ```
 
-Stop the lab with `./scripts/setup-lab-env.sh down` (or `docker compose down`).
-To start over with pristine targets (say, after uploading files to the FTP server),
-run `./scripts/setup-lab-env.sh reset`. Your files in `workspace/` are kept.
-If the lab won't start, see [Lab troubleshooting](guides/lab-troubleshooting.md).
+The first run downloads Kali, so give it a few minutes. Stop the lab with
+`./scripts/setup-lab-env.sh down`, or reset the targets to a clean state with
+`./scripts/setup-lab-env.sh reset` (your files in `workspace/` are kept). If it
+won't start, see [Lab troubleshooting](guides/lab-troubleshooting.md).
 
-**No Docker? Use Codespaces.** Click the **Codespaces** badge at the top. You get a
-browser-based VS Code where the lab builds and starts on its own (the first
-launch takes a few minutes while Kali downloads). Run
-`./scripts/setup-lab-env.sh shell` and start at module 01. Modules 01-03 and 05
-work fully there; live wireless (module 04) needs real hardware. Codespaces is
-free up to GitHub's monthly quota, so stop the codespace when you're done.
+**No Docker?** Click the **Codespaces** badge above. The lab builds and starts
+in a browser-based VS Code. Then run `./scripts/setup-lab-env.sh shell`.
+Everything except live wireless (module 04) works there. Codespaces is free up
+to GitHub's monthly quota, so stop the codespace when you're done.
 
 ## Curriculum
-
-Four levels across five modules. Read them on the
-[docs site](https://tmhsdigital.github.io/Kali-Linux-for-beginners/) (search,
-progress tracking, offline support) or right here on GitHub.
 
 | Level | Module | Time | You will be able to |
 |-------|--------|------|---------------------|
@@ -87,16 +70,18 @@ progress tracking, offline support) or right here on GitHub.
 | 2 &middot; Wireless | [04. Wireless Security & Aircrack-ng](04-wireless-security-aircrack/) | ~4 h | Capture and crack a WPA2 handshake in a lab; understand WPA3 and PMF defenses |
 | 3 &middot; Forensics | [05. Packet Analysis & Wireshark](05-packet-analysis-wireshark/) | ~3 h | Reassemble sessions, extract cleartext credentials, and describe the fix |
 
-Commands are tagged by depth so you can find your level:
-`[Level 0: Fundamental]`, `[Level 1: Intermediate]`, `[Level 2+: Advanced / Field Ops]`.
+Take them in order. Commands are tagged by depth (`[Level 0: Fundamental]`,
+`[Level 1: Intermediate]`, `[Level 2+: Advanced / Field Ops]`) so you can tell
+what to learn now and what to come back to.
 
-New to all of this? Start at [module 01](01-terminal-and-linux-core/), do its
-lab exercises, then continue in order with the [cheatsheets](#cheatsheets) open
-alongside.
+The modules read fine here on GitHub. The
+[docs site](https://tmhsdigital.github.io/Kali-Linux-for-beginners/) adds
+full-text search, progress tracking, glossary definitions on hover, and offline
+reading, with no third-party scripts.
 
 ## The practice lab
 
-`docker compose` brings up three containers on a private `10.77.0.0/24` bridge:
+`docker compose` starts three containers on a private `10.77.0.0/24` bridge:
 
 | Host | Address | Purpose |
 |------|---------|---------|
@@ -104,27 +89,11 @@ alongside.
 | `web-target` | `10.77.0.10` | Plain-HTTP login form for intercepting cleartext credentials |
 | `ftp-service` | `10.77.0.20` | vsftpd with anonymous and `labuser`/`labpass` logins, all cleartext |
 
-A real scan from the attacker shell:
-
-```text
-root@attacker:~# nmap 10.77.0.10 10.77.0.20
-Nmap scan report for web-target.pentest-lab-net (10.77.0.10)
-PORT   STATE SERVICE
-80/tcp open  http
-
-Nmap scan report for ftp-service.pentest-lab-net (10.77.0.20)
-PORT   STATE SERVICE
-21/tcp open  ftp
-
-Nmap done: 2 IP addresses (2 hosts up) scanned in 0.19 seconds
-```
-
-The attacker box works the same on Linux, Docker Desktop (Windows/macOS), and
-WSL2. With Docker Desktop the `10.77.0.x` addresses aren't reachable from your
-host, so run module commands from `./scripts/setup-lab-env.sh shell`. The repo
-is mounted read-only at `/lab`, and anything you save in `/root/work` shows up
-in `workspace/` in your clone. From the host, the targets are also published on
-`127.0.0.1:8080` (web) and `127.0.0.1:2121` (FTP).
+It works the same on Linux, Docker Desktop (Windows/macOS), and WSL2. With
+Docker Desktop the `10.77.0.x` addresses aren't reachable from your host, so run
+module commands from `./scripts/setup-lab-env.sh shell`. Anything you save in
+`/root/work` there shows up in `workspace/` in your clone. The targets are also
+published on `127.0.0.1:8080` (web) and `127.0.0.1:2121` (FTP).
 
 <details>
 <summary><b>Running Kali yourself</b> (bare-metal, VirtualBox, VMware, WSL2)</summary>
@@ -173,93 +142,25 @@ Driver compilation and VM USB passthrough are covered in
 | [Aircrack-ng workflow](cheatsheets/03-aircrack-workflow.md) | Monitor mode to cracked handshake, step by step |
 | [Wireshark BPF and display filters](cheatsheets/04-wireshark-bpf-and-display.md) | BPF capture filters, display filters by protocol, and tshark essentials |
 
-All four print cleanly from the docs site.
+All four print cleanly from the docs site. New terms are defined in the
+[glossary](guides/glossary.md).
 
-## Teaching with this course
+## Teaching and contributing
 
 Running it for a class, club, or study group? The
 [teaching guide](guides/teaching-with-this-course.md) covers lab options, a
-six-session schedule, and how to handle the wireless
-module safely. Questions and show-and-tell go in
+six-session schedule, and how to handle the wireless module safely. Questions
+and show-and-tell go in
 [Discussions](https://github.com/TMHSDigital/Kali-Linux-for-beginners/discussions).
 
-## Project structure
-
-<details>
-<summary><b>Repository layout</b></summary>
-
-<br>
-
-```text
-Kali-Linux-for-beginners/
-├── 01-terminal-and-linux-core/       # Level 0
-├── 02-system-admin-and-privileges/   # Level 1
-├── 03-network-recon-and-nmap/        # Level 2
-├── 04-wireless-security-aircrack/    # Level 2
-├── 05-packet-analysis-wireshark/     # Level 3
-├── cheatsheets/                      # Quick reference
-├── guides/                           # Teaching with this course
-├── lab/                              # Lab images: attacker, web-target, ftp-service
-├── scripts/
-│   ├── setup-lab-env.sh              # Guarded lab launcher
-│   ├── parse-nmap-xml.py             # Nmap XML to terminal table
-│   └── build-site.py                 # Generates the docs site from the repo
-├── site/                             # Docs site assets (CSS, JS, service worker)
-├── tests/                            # pytest for the scripts, lab smoke test
-├── docker-compose.yml                # Practice lab (attacker + targets)
-└── .github/workflows/ci.yml          # Lint, tests, lab smoke test, site deploy
-```
-
-Turn an Nmap scan into a readable table:
-
-```bash
-nmap -sV -oX - 10.77.0.10 | parse-nmap-xml.py -     # in the attacker shell (on PATH)
-# from your own clone instead: ./scripts/parse-nmap-xml.py scan.xml
-```
-
-</details>
-
-<details>
-<summary><b>How the docs site is built</b></summary>
-
-<br>
-
-The [docs site](https://tmhsdigital.github.io/Kali-Linux-for-beginners/) is
-generated from this repository by
-[`scripts/build-site.py`](scripts/build-site.py) on every push to `main`. It
-walks the repo, builds the navigation from the directory structure, takes each
-page's title from its first heading, and pre-renders every page to static HTML,
-so each document has its own URL, link preview, and search-engine entry. Adding
-a module or cheatsheet is enough for it to appear.
-
-Search covers the full text of every page, so it finds commands and flags as
-well as titles. Progress is stored in your browser, pages work offline after the
-first visit, and the site loads no third-party scripts.
-
-Preview it locally:
-
-```bash
-pip install -r requirements-dev.txt        # markdown-it-py + Pygments (+ test tools)
-python scripts/build-site.py --out _site
-cd _site && python -m http.server 8099     # open http://127.0.0.1:8099
-```
-
-</details>
-
-## Contributing
-
-Contributions are welcome, from typo fixes to new modules. Content is Markdown;
-adding a `NN-topic/` folder with a `README.md` is all it takes for a new module
-to show up on the site. Every technique needs the command, its real output from
-the lab, and a defensive note. See [CONTRIBUTING.md](CONTRIBUTING.md) for the
-content rules and the local checks CI runs (ruff, pytest, shellcheck, the lab
-smoke test, and an offline link check).
-
-- **Found a mistake or a broken command?** [Open an issue](https://github.com/TMHSDigital/Kali-Linux-for-beginners/issues/new/choose).
-- **Security problem in the lab or scripts?** Please follow [SECURITY.md](SECURITY.md) rather than opening a public issue.
-- **What changed?** See the [changelog](CHANGELOG.md).
-
-This project follows a [Code of Conduct](CODE_OF_CONDUCT.md).
+Found a broken command or wrong output?
+[Open an issue](https://github.com/TMHSDigital/Kali-Linux-for-beginners/issues/new/choose).
+Want to fix it or write a module? [CONTRIBUTING.md](CONTRIBUTING.md) has the
+content rules, how the repo and the docs site fit together, and the checks CI
+runs. For a security problem in the lab or scripts, follow
+[SECURITY.md](SECURITY.md) instead of opening a public issue. Changes are listed
+in the [changelog](CHANGELOG.md), and the project follows a
+[Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Credits
 

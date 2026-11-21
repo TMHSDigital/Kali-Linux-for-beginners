@@ -27,8 +27,41 @@ command are as welcome as whole new modules.
 | `scripts/` | `setup-lab-env.sh` (lab launcher), `parse-nmap-xml.py` (scan-to-table), `build-site.py` (docs site). |
 | `tests/` | pytest suites for the scripts and `lab-smoke.sh` for the lab. |
 
-The docs site is generated from the file tree. A new `NN-topic/README.md`
-appears in the navigation automatically, titled by its first `#` heading.
+`parse-nmap-xml.py` turns an Nmap scan into a readable table. It is on the
+attacker's `PATH`:
+
+```bash
+nmap -sV -oX - 10.77.0.10 | parse-nmap-xml.py -     # in the attacker shell
+./scripts/parse-nmap-xml.py scan.xml                 # from your own clone
+```
+
+## The docs site
+
+[`scripts/build-site.py`](scripts/build-site.py) generates the
+[docs site](https://tmhsdigital.github.io/Kali-Linux-for-beginners/) from the
+file tree on every push to `main`. It builds the navigation from the directory
+structure, takes each page's title from its first `#` heading, and pre-renders
+every page to static HTML, so each document has its own URL and link preview.
+A new `NN-topic/README.md` appears in the navigation automatically.
+
+Some of what learners see is derived from the content, so keep it in shape:
+
+- A `text` code block right after a paragraph starting "Expected" is shown as
+  expected output (labelled, no copy button).
+- The first use of each [glossary](guides/glossary.md) term on a page links to
+  its definition. Glossary entries are `**Term.** Definition. See [...]`
+  paragraphs. Root, Port, Group, Shell, and Filtered are never marked
+  automatically.
+- The landing page's lab map and hosts table read addresses and published ports
+  from `docker-compose.yml`.
+
+Search covers the full text of every page. Progress is stored in the browser,
+pages work offline after the first visit, and the site loads no third-party
+scripts.
+
+The README's terminal demo, `site/assets/demo.svg`, is plain SVG text with CSS
+animation. If the lab's output changes, re-run its commands in
+`./scripts/setup-lab-env.sh shell` and update the lines to match.
 
 ## Content style guide
 
