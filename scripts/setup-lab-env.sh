@@ -16,7 +16,7 @@
 # Exit codes: 0 ok | 1 dependency missing | 2 daemon down | 3 compose error
 #             4 subnet conflict
 # =============================================================================
-set -euo pipefail
+set -Eeuo pipefail  # -E: functions inherit the ERR trap below
 
 # --- Resolve the repo root regardless of where the script is invoked from ----
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
@@ -126,16 +126,19 @@ wait_healthy() {
     [[ "${status}" == "healthy" || "${status}" == "running" ]] && { ok "${svc} is ${status}."; return 0; }
     sleep 3
   done
-  warn "${svc} is not healthy yet (status: ${status:-unknown}). Check: docker compose logs ${svc}"
+  warn "${svc} is not healthy (status: ${status:-unknown}). Check: docker compose logs ${svc}"
+  return 1
 }
 
 lab_up() {
   info "Building and starting the lab (the first run downloads Kali; give it a few minutes) ..."
   mkdir -p "${REPO_ROOT}/workspace"
   compose up -d --build
-  wait_healthy web-target
-  wait_healthy ftp-service
-  wait_healthy attacker
+  local svc unhealthy=""
+  for svc in web-target ftp-service attacker; do
+    wait_healthy "${svc}" || unhealthy+=" ${svc}"
+  done
+  [[ -z "${unhealthy}" ]] || die "The lab did not become healthy:${unhealthy}. See the warnings above." 3
 
   cat <<EOF
 
