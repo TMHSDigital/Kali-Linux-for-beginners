@@ -316,3 +316,13 @@ def test_cli_refuses_repo_root(site_builder):
     with pytest.raises(SystemExit, match="refusing"):
         site_builder.main(["--out", "."])
     assert (REPO_ROOT / ".git").exists()
+
+
+def test_report_problem_link_is_url_encoded(site_builder, tmp_path):
+    repo = tmp_path / "repo"
+    (repo / "03-recon").mkdir(parents=True)
+    (repo / "03-recon" / "README.md").write_text("# 03: Network Recon & Nmap #1+\n\nText.\n")
+    out = tmp_path / "_site"
+    site_builder.build(repo, out, REPO_ROOT / "site")
+    page = read(out, "03-recon/index.html")
+    assert "issues/new?title=Docs%3A+03%3A+Network+Recon+%26+Nmap+%231%2B\"" in page

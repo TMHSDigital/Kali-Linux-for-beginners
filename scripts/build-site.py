@@ -36,7 +36,7 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-from urllib.parse import urlsplit
+from urllib.parse import quote_plus, urlsplit
 
 from markdown_it import MarkdownIt
 from markdown_it.token import Token
@@ -643,7 +643,7 @@ def doc_body(entry: Dict, rendered: Dict, prev: Optional[Dict], nxt: Optional[Di
         pager.append(f'<a class="pager-btn pager-next" rel="next" href="{esc(rel_href(url, nxt["url"]))}">'
                      f'<small>Next {icon("arrow-right")}</small><span>{esc(nxt["title"])}</span>'
                      f'<em>{esc(nxt.get("section", ""))}</em></a>')
-    issue = f"https://github.com/{REPO}/issues/new?title=" + esc(f"Docs: {entry['title']}").replace(" ", "+")
+    issue = f"https://github.com/{REPO}/issues/new?title=" + quote_plus(f"Docs: {entry['title']}")
     article = rendered["html"].replace("</h1>\n", "</h1>\n" + toc_inline(rendered["toc"]), 1)
     done_next = (f'<a id="done-next" class="done-next" href="{esc(rel_href(url, nxt["url"]))}">'
                  f'Mark complete and continue {icon("arrow-right")}</a>') if nxt else ""
@@ -660,7 +660,7 @@ def doc_body(entry: Dict, rendered: Dict, prev: Optional[Dict], nxt: Optional[Di
         <span class="doc-actions-links">
           <a href="https://github.com/{REPO}/blob/{BRANCH}/{esc(entry["path"])}"
              rel="noopener">{icon("edit")} Edit this page</a>
-          <a href="{issue}" rel="noopener">{icon("issue")} Report a problem</a>
+          <a href="{esc(issue)}" rel="noopener">{icon("issue")} Report a problem</a>
         </span>
       </div>
       <nav class="pager" aria-label="Previous and next document">{"".join(pager)}</nav>"""
