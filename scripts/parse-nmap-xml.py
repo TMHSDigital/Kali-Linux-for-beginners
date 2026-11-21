@@ -270,9 +270,25 @@ def render_markdown(hosts: List[Host], out: TextIO) -> None:
 # --------------------------------------------------------------------------- #
 # CLI
 # --------------------------------------------------------------------------- #
+EPILOG = """examples:
+  # pipe a scan straight in ('-' reads stdin)
+  nmap -sV -oX - 10.77.0.10 | parse-nmap-xml.py -
+
+  # read a saved scan, including closed ports
+  nmap -sV -oX scan.xml 10.77.0.10 10.77.0.20
+  parse-nmap-xml.py scan.xml --all-states
+
+  # append a Markdown table to your report, or export CSV / JSON
+  parse-nmap-xml.py scan.xml --format markdown >> findings.md
+  parse-nmap-xml.py scan.xml --format csv > scan.csv
+  parse-nmap-xml.py scan.xml --format json
+"""
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Render an Nmap -oX XML report as a terminal table.",
+        epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(

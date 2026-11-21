@@ -169,3 +169,10 @@ def test_unencodable_output_does_not_crash(tmp_path):
                            str(xml), "--no-color"], capture_output=True, env=env)
     assert proc.returncode == 0, proc.stderr.decode("utf-8", "replace")
     assert b"Traceback" not in proc.stderr
+
+
+def test_help_shows_examples(nmap_parser):
+    text = nmap_parser.build_parser().format_help()
+    assert "examples:" in text
+    assert "nmap -sV -oX - 10.77.0.10 | parse-nmap-xml.py -" in text
+    assert "--format markdown" in text and "--format json" in text
