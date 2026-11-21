@@ -37,6 +37,8 @@ jobs:
         run: pytest -q
       - name: ShellCheck
         run: shellcheck scripts/*.sh tests/*.sh lab/*/*.sh
+      - name: Setup script unit tests
+        run: bash tests/test-setup-lab-env.sh
       - name: Compose file is valid
         run: docker compose config -q
       - name: actionlint

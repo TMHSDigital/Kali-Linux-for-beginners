@@ -76,6 +76,7 @@ If you add a target or change behavior the docs rely on, add a check to
 pip install -r requirements-dev.txt
 ruff check scripts tests
 pytest -q
+bash tests/test-setup-lab-env.sh   # setup script's subnet guard; no Docker needed
 python scripts/build-site.py --out _site && (cd _site && python -m http.server 8099)
 ```
 

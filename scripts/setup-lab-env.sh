@@ -224,4 +224,7 @@ main() {
   esac
 }
 
-main "$@"
+# Run only when executed, so tests can source this file for its functions.
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi
