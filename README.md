@@ -15,7 +15,9 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![Open in Codespaces](https://img.shields.io/badge/Codespaces-open-181717?style=flat-square&logo=github)](https://codespaces.new/TMHSDigital/Kali-Linux-for-beginners)
 
-[![The course website: the module list and a real nmap scan of the practice lab](site/assets/screenshot.png)](https://tmhsdigital.github.io/Kali-Linux-for-beginners/)
+![Terminal demo in the practice lab: nmap finds HTTP and FTP on the targets, tshark captures an FTP login, then reads the username labuser and password labpass out of the capture](site/assets/demo.svg)
+
+<sub>Real output from the practice lab, using commands from modules 03 and 05.</sub>
 
 </div>
 

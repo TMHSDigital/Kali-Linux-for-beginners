@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="573" viewBox="0 0 780 573" role="img" aria-labelledby="t d">
+<title id="t">Terminal demo: attacker (10.77.0.5): scan, capture, and read a cleartext FTP login in the practice lab</title>
+<desc id="d">In the attacker shell, nmap finds HTTP on 10.77.0.10 and FTP on 10.77.0.20. tshark captures an FTP login made with curl, then reads the username labuser and password labpass back out of the capture.</desc>
+<style>
+text{font-family:ui-monospace,SFMono-Regular,"Cascadia Code",Menlo,Consolas,"Liberation Mono",monospace;font-size:13px}
+@keyframes a0{0%,5.851%{opacity:0}5.857%,100%{opacity:1}}.l0{animation:a0 18.80s linear infinite}
+@keyframes a1{0%,8.511%{opacity:0}8.516%,100%{opacity:1}}.l1{animation:a1 18.80s linear infinite}
+@keyframes c1{0%,8.511%{transform:translateX(0)}11.585%,100%{transform:translateX(206.8px)}}.c1{animation:c1 18.80s steps(26) infinite}
+@keyframes a2{0%,14.244%{opacity:0}14.250%,100%{opacity:1}}.l2{animation:a2 18.80s linear infinite}
+@keyframes a3{0%,14.723%{opacity:0}14.728%,100%{opacity:1}}.l3{animation:a3 18.80s linear infinite}
+@keyframes a4{0%,15.202%{opacity:0}15.207%,100%{opacity:1}}.l4{animation:a4 18.80s linear infinite}
+@keyframes a6{0%,15.947%{opacity:0}15.952%,100%{opacity:1}}.l6{animation:a6 18.80s linear infinite}
+@keyframes a7{0%,16.425%{opacity:0}16.431%,100%{opacity:1}}.l7{animation:a7 18.80s linear infinite}
+@keyframes a8{0%,16.904%{opacity:0}16.909%,100%{opacity:1}}.l8{animation:a8 18.80s linear infinite}
+@keyframes a10{0%,17.649%{opacity:0}17.654%,100%{opacity:1}}.l10{animation:a10 18.80s linear infinite}
+@keyframes a12{0%,21.053%{opacity:0}21.059%,100%{opacity:1}}.l12{animation:a12 18.80s linear infinite}
+@keyframes a13{0%,23.713%{opacity:0}23.718%,100%{opacity:1}}.l13{animation:a13 18.80s linear infinite}
+@keyframes c13{0%,23.713%{transform:translateX(0)}29.624%,100%{transform:translateX(394.0px)}}.c13{animation:c13 18.80s steps(50) infinite}
+@keyframes a14{0%,32.283%{opacity:0}32.289%,100%{opacity:1}}.l14{animation:a14 18.80s linear infinite}
+@keyframes a15{0%,32.762%{opacity:0}32.767%,100%{opacity:1}}.l15{animation:a15 18.80s linear infinite}
+@keyframes a16{0%,33.241%{opacity:0}33.246%,100%{opacity:1}}.l16{animation:a16 18.80s linear infinite}
+@keyframes c16{0%,33.241%{transform:translateX(0)}38.087%,100%{transform:translateX(323.8px)}}.c16{animation:c16 18.80s steps(41) infinite}
+@keyframes a17{0%,40.747%{opacity:0}40.752%,100%{opacity:1}}.l17{animation:a17 18.80s linear infinite}
+@keyframes a18{0%,41.226%{opacity:0}41.231%,100%{opacity:1}}.l18{animation:a18 18.80s linear infinite}
+@keyframes c18{0%,41.226%{transform:translateX(0)}43.088%,100%{transform:translateX(58.6px)}}.c18{animation:c18 18.80s steps(7) infinite}
+@keyframes a19{0%,45.747%{opacity:0}45.753%,100%{opacity:1}}.l19{animation:a19 18.80s linear infinite}
+@keyframes a21{0%,49.152%{opacity:0}49.157%,100%{opacity:1}}.l21{animation:a21 18.80s linear infinite}
+@keyframes a22{0%,51.812%{opacity:0}51.817%,100%{opacity:1}}.l22{animation:a22 18.80s linear infinite}
+@keyframes c22{0%,51.812%{transform:translateX(0)}60.559%,100%{transform:translateX(581.2px)}}.c22{animation:c22 18.80s steps(74) infinite}
+@keyframes a23{0%,63.219%{opacity:0}63.224%,100%{opacity:1}}.l23{animation:a23 18.80s linear infinite}
+@keyframes c23{0%,63.219%{transform:translateX(0)}70.903%,100%{transform:translateX(511.0px)}}.c23{animation:c23 18.80s steps(65) infinite}
+@keyframes a24{0%,71.966%{opacity:0}71.972%,100%{opacity:1}}.l24{animation:a24 18.80s linear infinite}
+@keyframes a25{0%,72.445%{opacity:0}72.450%,100%{opacity:1}}.l25{animation:a25 18.80s linear infinite}
+@keyframes a26{0%,72.924%{opacity:0}72.929%,100%{opacity:1}}.l26{animation:a26 18.80s linear infinite}
+@media (prefers-reduced-motion:reduce){text,rect{animation:none!important;opacity:1!important}.cover{display:none}}
+</style>
+<rect x="0.5" y="0.5" width="779" height="572" rx="10" fill="#0c1118" stroke="#222b38"/>
+<path d="M0.5 32V10.5a10 10 0 0 1 10-10h759a10 10 0 0 1 10 10V32z" fill="#10151d"/>
+<line x1="0.5" y1="32" x2="779.5" y2="32" stroke="#222b38"/>
+<circle cx="20" cy="16.0" r="5" fill="#3a4556"/><circle cx="37" cy="16.0" r="5" fill="#3a4556"/><circle cx="54" cy="16.0" r="5" fill="#3a4556"/>
+<text x="390.0" y="20.0" fill="#7d8a99" text-anchor="middle" font-size="12">attacker (10.77.0.5) - Kali practice lab</text>
+<text class="l0" x="18" y="62" fill="#7d8a99" xml:space="preserve"># 1. Find what is running on the lab network</text>
+<text class="l1" x="18" y="81" fill="#e6edf3" xml:space="preserve"><tspan fill="#3fb950">root@attacker:~#</tspan> nmap 10.77.0.10 10.77.0.20</text>
+<rect class="c1 cover" x="150.6" y="68" width="208.8" height="19" fill="#0c1118"/>
+<text class="l2" x="18" y="100" fill="#e6edf3" xml:space="preserve">Nmap scan report for web-target.pentest-lab-net (10.77.0.10)</text>
+<text class="l3" x="18" y="119" fill="#e6edf3" xml:space="preserve">PORT   STATE SERVICE</text>
+<text class="l4" x="18" y="138" fill="#36c5f0" xml:space="preserve">80/tcp open  http</text>
+<text class="l6" x="18" y="176" fill="#e6edf3" xml:space="preserve">Nmap scan report for ftp-service.pentest-lab-net (10.77.0.20)</text>
+<text class="l7" x="18" y="195" fill="#e6edf3" xml:space="preserve">PORT   STATE SERVICE</text>
+<text class="l8" x="18" y="214" fill="#36c5f0" xml:space="preserve">21/tcp open  ftp</text>
+<text class="l10" x="18" y="252" fill="#e6edf3" xml:space="preserve">Nmap done: 2 IP addresses (2 hosts up) scanned in 0.16 seconds</text>
+<text class="l12" x="18" y="290" fill="#7d8a99" xml:space="preserve"># 2. Capture an FTP login while it happens</text>
+<text class="l13" x="18" y="309" fill="#e6edf3" xml:space="preserve"><tspan fill="#3fb950">root@attacker:~#</tspan> tshark -i eth0 -f &quot;tcp port 21&quot; -w ftp.pcapng -q &amp;</text>
+<rect class="c13 cover" x="150.6" y="296" width="396.0" height="19" fill="#0c1118"/>
+<text class="l14" x="18" y="328" fill="#e6edf3" xml:space="preserve">[1] 92</text>
+<text class="l15" x="18" y="347" fill="#e6edf3" xml:space="preserve">Capturing on &#x27;eth0&#x27;</text>
+<text class="l16" x="18" y="366" fill="#e6edf3" xml:space="preserve"><tspan fill="#3fb950">root@attacker:~#</tspan> curl -s ftp://labuser:labpass@10.77.0.20/</text>
+<rect class="c16 cover" x="150.6" y="353" width="325.8" height="19" fill="#0c1118"/>
+<text class="l17" x="18" y="385" fill="#e6edf3" xml:space="preserve">-rw-r--r--    1 1000     1000           72 Nov 21 10:24 notes.txt</text>
+<text class="l18" x="18" y="404" fill="#e6edf3" xml:space="preserve"><tspan fill="#3fb950">root@attacker:~#</tspan> kill %1</text>
+<rect class="c18 cover" x="150.6" y="391" width="60.6" height="19" fill="#0c1118"/>
+<text class="l19" x="18" y="423" fill="#e6edf3" xml:space="preserve">28 packets captured</text>
+<text class="l21" x="18" y="461" fill="#7d8a99" xml:space="preserve"># 3. Read the username and password out of the capture</text>
+<text class="l22" x="18" y="480" fill="#e6edf3" xml:space="preserve"><tspan fill="#3fb950">root@attacker:~#</tspan> tshark -r ftp.pcapng -T fields -e ftp.request.command -e ftp.request.arg \</text>
+<rect class="c22 cover" x="150.6" y="467" width="583.2" height="19" fill="#0c1118"/>
+<text class="l23" x="18" y="499" fill="#e6edf3" xml:space="preserve"><tspan fill="#7d8a99">&gt;</tspan>   -Y &#x27;ftp.request.command==&quot;USER&quot; || ftp.request.command==&quot;PASS&quot;&#x27;</text>
+<rect class="c23 cover" x="33.6" y="486" width="513.0" height="19" fill="#0c1118"/>
+<text class="l24" x="18" y="518" fill="#f2a33a" font-weight="700" xml:space="preserve">USER    labuser</text>
+<text class="l25" x="18" y="537" fill="#f2a33a" font-weight="700" xml:space="preserve">PASS    labpass</text>
+<text class="l26" x="18" y="556" fill="#e6edf3" xml:space="preserve"><tspan fill="#3fb950">root@attacker:~#</tspan> </text>
+<rect class="l26 cursor" x="150.6" y="544" width="7.8" height="16" fill="#e6edf3"/>
+</svg>

@@ -509,7 +509,11 @@ class Renderer:
                             child.attrSet("rel", "noopener")
                     elif child.type == "image":
                         src = child.attrGet("src") or ""
-                        if src and not urlsplit(src).scheme:
+                        local = posixpath.normpath(posixpath.join(posixpath.dirname(rel), src))
+                        if src and not urlsplit(src).scheme and local.startswith("site/"):
+                            # site/ is published with the pages: use that copy (works offline too).
+                            child.attrSet("src", rel_href(entry["url"], local[len("site/"):]))
+                        elif src and not urlsplit(src).scheme:
                             child.attrSet("src", f"https://raw.githubusercontent.com/{REPO}/"
                                                  f"{BRANCH}/" + posixpath.normpath(
                                                      posixpath.join(posixpath.dirname(rel), src)))

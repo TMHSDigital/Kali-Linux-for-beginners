@@ -376,6 +376,17 @@ def test_landing_page_lab_map(built):
     assert "style=" not in svg  # the CSP forbids inline styles
 
 
+def test_images_in_site_folder_use_the_published_copy(site_builder, tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "README.md").write_text("# P\n\n![demo](site/assets/demo.svg)\n\n![other](docs/x.png)\n")
+    out = tmp_path / "_site"
+    site_builder.build(repo, out, REPO_ROOT / "site")
+    page = read(out, "overview/index.html")
+    assert '<img src="../assets/demo.svg" alt="demo"' in page
+    assert "raw.githubusercontent.com/TMHSDigital/Kali-Linux-for-beginners/main/docs/x.png" in page
+
+
 def test_404_has_suggestion_slot(built):
     assert '<div id="suggest" hidden>' in read(built[0], "404.html")
 
