@@ -1,4 +1,4 @@
-# Wireshark BPF & Display Filter Cheat Sheet
+# Wireshark capture and display filters
 
 Condensed reference for module 05. **Two languages:** capture filters (BPF,
 before capture) and display filters (`protocol.field`, after capture). Never mix

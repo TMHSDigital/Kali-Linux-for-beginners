@@ -65,14 +65,14 @@ to GitHub's monthly quota, so stop the codespace when you're done.
 
 | Level | Module | Time | You will be able to |
 |-------|--------|------|---------------------|
-| 0 &middot; Fundamentals | [01. Terminal & Linux Core](01-terminal-and-linux-core/) | ~3 h | Navigate, inspect, and manipulate Linux from the shell; use pipes and redirection |
-| 1 &middot; Administration | [02. System Admin & Privileges](02-system-admin-and-privileges/) | ~4 h | Read the Unix privilege model; audit SUID and sudo for escalation surface |
-| 2 &middot; Recon | [03. Network Recon & Nmap](03-network-recon-and-nmap/) | ~4 h | Map a network and choose the right scan for stealth, speed, or depth |
-| 2 &middot; Wireless | [04. Wireless Security & Aircrack-ng](04-wireless-security-aircrack/) | ~4 h | Capture and crack a WPA2 handshake in a lab; understand WPA3 and PMF defenses |
-| 3 &middot; Forensics | [05. Packet Analysis & Wireshark](05-packet-analysis-wireshark/) | ~3 h | Reassemble sessions, extract cleartext credentials, and describe the fix |
+| 0 &middot; Fundamentals | [01. Terminal & Linux core](01-terminal-and-linux-core/) | ~3 h | Navigate, inspect, and manipulate Linux from the shell; use pipes and redirection |
+| 1 &middot; Administration | [02. System administration & privileges](02-system-admin-and-privileges/) | ~4 h | Read the Unix privilege model; audit SUID and sudo for escalation surface |
+| 2 &middot; Recon | [03. Network recon & Nmap](03-network-recon-and-nmap/) | ~4 h | Map a network and choose the right scan for stealth, speed, or depth |
+| 2 &middot; Wireless | [04. Wireless security & Aircrack-ng](04-wireless-security-aircrack/) | ~4 h | Capture and crack a WPA2 handshake in a lab; understand WPA3 and PMF defenses |
+| 3 &middot; Traffic analysis | [05. Packet analysis & Wireshark](05-packet-analysis-wireshark/) | ~3 h | Reassemble sessions, extract cleartext credentials, and describe the fix |
 
 Take them in order. Commands are tagged by depth (`[Level 0: Fundamental]`,
-`[Level 1: Intermediate]`, `[Level 2+: Advanced / Field Ops]`) so you can tell
+`[Level 1: Intermediate]`, `[Level 2+: Advanced]`) so you can tell
 what to learn now and what to come back to.
 
 The modules read fine here on GitHub. The
@@ -139,7 +139,7 @@ Driver compilation and VM USB passthrough are covered in
 | Cheatsheet | Covers |
 |---|---|
 | [Kali survival commands](cheatsheets/01-kali-survival-commands.md) | Files, processes, users, networking, and packages from the shell |
-| [Nmap tactical reference](cheatsheets/02-nmap-tactical-reference.md) | Targets, host discovery, scan types, timing, NSE, and output formats |
+| [Nmap reference](cheatsheets/02-nmap-tactical-reference.md) | Targets, host discovery, scan types, timing, NSE, and output formats |
 | [Aircrack-ng workflow](cheatsheets/03-aircrack-workflow.md) | Monitor mode to cracked handshake, step by step |
 | [Wireshark BPF and display filters](cheatsheets/04-wireshark-bpf-and-display.md) | BPF capture filters, display filters by protocol, and tshark essentials |
 

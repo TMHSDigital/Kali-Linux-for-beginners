@@ -1,4 +1,4 @@
-# 01: Terminal & Linux Core `[Level 0: Fundamental]`
+# 01: Terminal & Linux core `[Level 0: Fundamental]`
 <!-- time: ~3 hours -->
 <!-- outcome: Navigate, inspect, and manipulate Linux from the shell; use pipes and redirection. -->
 

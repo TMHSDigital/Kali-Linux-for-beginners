@@ -1,4 +1,4 @@
-# 05: Packet Analysis with Wireshark & tshark `[Level 3: Traffic Forensics]`
+# 05: Packet analysis with Wireshark & tshark `[Level 3: Traffic analysis]`
 <!-- time: ~3 hours -->
 <!-- outcome: Reassemble sessions, extract cleartext credentials, and describe the fix. -->
 
@@ -141,7 +141,7 @@ ftp || http                           # OR  (|| or 'or')
 
 ---
 
-## 4. Following & reassembling streams `[Level 2+: Advanced / Field Ops]`
+## 4. Following & reassembling streams `[Level 2+: Advanced]`
 
 A single logical conversation (a login, a page load) is spread across many
 packets. Wireshark reassembles them:
@@ -164,7 +164,7 @@ packets. Wireshark reassembles them:
 
 ---
 
-## 5. Extracting cleartext credentials `[Level 2+: Advanced / Field Ops]`
+## 5. Extracting cleartext credentials `[Level 2+: Advanced]`
 
 These labs show why unencrypted protocols expose credentials to anyone who can
 see the traffic. Using the Docker lab:
@@ -220,7 +220,7 @@ HTTP (images, downloads, uploaded documents) and lets you save them to disk.
 
 ---
 
-## 6. Headless analysis with `tshark` `[Level 2+: Advanced / Field Ops]`
+## 6. Headless analysis with `tshark` `[Level 2+: Advanced]`
 
 `tshark` is Wireshark's CLI. Essential for servers, scripting, and processing
 capture files without a GUI, and the only realistic option under WSL2.

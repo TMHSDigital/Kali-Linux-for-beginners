@@ -69,7 +69,7 @@ animation. If the lab's output changes, re-run its commands in
    command(s), then the **expected output** (real output from the lab), then a
    **defensive note** (how to detect or prevent it).
 2. **Tag depth** in code comments: `[Level 0: Fundamental]`,
-   `[Level 1: Intermediate]`, `[Level 2+: Advanced / Field Ops]`. A module's H1
+   `[Level 1: Intermediate]`, `[Level 2+: Advanced]`. A module's H1
    ends with its level tag, e.g. ``# 06: Web Basics `[Level 2: Web]` ``, and the
    next line carries a time estimate: `<!-- time: ~3 hours -->`, followed by
    a one-line outcome for the site's landing page:

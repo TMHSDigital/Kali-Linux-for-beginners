@@ -1,4 +1,4 @@
-# 02: System Administration & Privileges `[Level 1: Administration]`
+# 02: System administration & privileges `[Level 1: Administration]`
 <!-- time: ~4 hours -->
 <!-- outcome: Read the Unix privilege model; audit SUID and sudo for escalation surface. -->
 
@@ -158,7 +158,7 @@ deploy  ALL=(www-data) /usr/bin/systemctl restart app
 > [GTFOBins](https://gtfobins.github.io)) is a core assessment step.
 
 ```bash
-# [Level 2+: Advanced / Field Ops] Enumerate your escalation surface fast
+# [Level 2+: Advanced] Enumerate your escalation surface fast
 sudo -l 2>/dev/null                 # what can I run as root already?
 cat /etc/sudoers.d/* 2>/dev/null    # drop-in rules people forget to audit
 ```
@@ -286,7 +286,7 @@ Beyond rwx there are three special bits:
   file's owner can delete it, even though the dir is world-writable.
 
 ```bash
-# [Level 2+: Advanced / Field Ops] Audit SUID binaries, THE classic first step
+# [Level 2+: Advanced] Audit SUID binaries, THE classic first step
 find / -perm -u=s -type f 2>/dev/null            # all SUID files
 find / -perm -g=s -type f 2>/dev/null            # all SGID files
 find / -perm -4000 -type f -exec ls -la {} \; 2>/dev/null   # SUID w/ details

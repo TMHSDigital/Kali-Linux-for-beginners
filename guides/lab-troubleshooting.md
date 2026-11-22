@@ -1,4 +1,4 @@
-# Lab Troubleshooting
+# Lab troubleshooting
 
 When the practice lab won't start or a module command doesn't behave, check this
 page first. Each entry shows the message you see, what it means, and the fix.
@@ -101,7 +101,7 @@ browser, use `http://127.0.0.1:8080`.
 The first `./scripts/setup-lab-env.sh` downloads the Kali image and installs
 the tools in it, which can take several minutes on a slow or shared connection.
 Later starts reuse the built images. If you teach a group, have everyone do the
-first start before the session (see [Teaching with This Course](teaching-with-this-course.md)).
+first start before the session (see [Teaching with this course](teaching-with-this-course.md)).
 
 ## A smoke check fails
 

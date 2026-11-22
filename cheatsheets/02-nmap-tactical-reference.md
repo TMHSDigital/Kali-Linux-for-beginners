@@ -1,4 +1,4 @@
-# Nmap Tactical Reference
+# Nmap reference
 
 Dense flag + workflow reference for module 03. Anything with `-sS`, `-sU`, `-O`,
 or OS/packet-level features needs `sudo`. Scan only authorized targets.

@@ -1,4 +1,4 @@
-# Lab Exercises: System Administration & Privileges
+# Lab exercises: System administration & privileges
 
 These exercises create throwaway users, groups, and files, then walk through
 permission changes, a simulated SUID privilege-escalation audit, and service
@@ -321,5 +321,5 @@ echo "Lab 02 artifacts removed."
 | 9 | Background jobs, `pgrep`, `kill` |
 | 10 | `systemctl` / `journalctl`, or `service` without systemd |
 
-All PASS and you're ready for **[module 03, Network Recon &
+All PASS and you're ready for **[module 03, Network recon &
 Nmap](../03-network-recon-and-nmap/)**.

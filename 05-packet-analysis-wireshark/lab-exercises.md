@@ -1,4 +1,4 @@
-# Lab Exercises: Packet Analysis
+# Lab exercises: Packet analysis with Wireshark & tshark
 
 Capture the lab's cleartext logins and file transfers, then pull the secrets
 back out of the capture files with `tshark`. Each task has a **goal**, the

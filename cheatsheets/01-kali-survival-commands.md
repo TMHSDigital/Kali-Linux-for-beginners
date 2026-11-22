@@ -1,4 +1,4 @@
-# Kali Survival Commands: Quick Reference
+# Kali survival commands
 
 Command reference for the Linux core (modules 01-02).
 

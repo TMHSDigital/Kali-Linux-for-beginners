@@ -27,7 +27,7 @@ See [the filter cheatsheet](../05-packet-analysis-wireshark/filter-cheatsheet.md
 
 **Cleartext.** Data sent without encryption, so anyone who can see the traffic
 can read it. HTTP, FTP, and Telnet send passwords in cleartext.
-See [module 05](../05-packet-analysis-wireshark/README.md#5-extracting-cleartext-credentials-level-2-advanced--field-ops).
+See [module 05](../05-packet-analysis-wireshark/README.md#5-extracting-cleartext-credentials-level-2-advanced).
 
 **Deauthentication (deauth).** A Wi-Fi management frame that disconnects a
 client. Sending forged ones forces a client to reconnect so its handshake can be
@@ -134,7 +134,7 @@ Port scans work by watching how hosts answer the first step.
 See [module 03](../03-network-recon-and-nmap/README.md#1-how-scanning-works-tcpip-architecture).
 
 **tshark.** The command-line version of Wireshark, for capturing and reading
-packets without a GUI. See [module 05](../05-packet-analysis-wireshark/README.md#6-headless-analysis-with-tshark-level-2-advanced--field-ops).
+packets without a GUI. See [module 05](../05-packet-analysis-wireshark/README.md#6-headless-analysis-with-tshark-level-2-advanced).
 
 **UDP scan.** Nmap's `-sU`. UDP has no handshake, so scans are slow and many
 ports show as `open|filtered`.

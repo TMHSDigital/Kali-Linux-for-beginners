@@ -1,4 +1,4 @@
-# Teaching with This Course
+# Teaching with this course
 
 This page is for teachers, club leads, and anyone running the curriculum for a
 group. The material is MIT licensed: you can copy, adapt, and reorder it for your
@@ -47,11 +47,11 @@ to taste.
 
 | Session | Cover | Hands-on |
 |---------|-------|----------|
-| 1 | Ground rules, lab setup, [01. Terminal & Linux Core](../01-terminal-and-linux-core/) | Module 01 lab exercises (self-grading) |
-| 2 | [02. System Admin & Privileges](../02-system-admin-and-privileges/) | Module 02 lab exercises (self-grading) |
-| 3 | [03. Network Recon & Nmap](../03-network-recon-and-nmap/) | Module 03 lab exercises (self-grading): sweep, full port scan, versions, `parse-nmap-xml.py` |
-| 4 | [05. Packet Analysis & Wireshark](../05-packet-analysis-wireshark/) | Module 05 lab exercises (self-grading): recover the HTTP and FTP credentials and carve a file from the capture |
-| 5 | [04. Wireless Security & Aircrack-ng](../04-wireless-security-aircrack/) | Demo or small-group work, see below |
+| 1 | Ground rules, lab setup, [01. Terminal & Linux core](../01-terminal-and-linux-core/) | Module 01 lab exercises (self-grading) |
+| 2 | [02. System administration & privileges](../02-system-admin-and-privileges/) | Module 02 lab exercises (self-grading) |
+| 3 | [03. Network recon & Nmap](../03-network-recon-and-nmap/) | Module 03 lab exercises (self-grading): sweep, full port scan, versions, `parse-nmap-xml.py` |
+| 4 | [05. Packet analysis & Wireshark](../05-packet-analysis-wireshark/) | Module 05 lab exercises (self-grading): recover the HTTP and FTP credentials and carve a file from the capture |
+| 5 | [04. Wireless security & Aircrack-ng](../04-wireless-security-aircrack/) | Demo or small-group work, see below |
 | 6 | Review and defense | Each learner writes up one finding: what they did, the evidence, and the fix |
 
 Running module 05 before module 04 is deliberate. It only needs the Docker lab,

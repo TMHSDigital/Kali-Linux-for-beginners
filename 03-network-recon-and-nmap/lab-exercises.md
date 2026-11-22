@@ -1,4 +1,4 @@
-# Lab Exercises: Network Recon & Nmap
+# Lab exercises: Network recon & Nmap
 
 Map the practice lab the way you would map a real engagement: find what's
 alive, find what's listening, name the software, and save it all in a form you
@@ -183,5 +183,5 @@ echo "Lab 03 files removed."
 | 4 | `-oA` output and `parse-nmap-xml.py` |
 | 5 | NSE script finding, confirmed by hand |
 
-Five PASSes and you're ready for **[module 04, Wireless Security &
+Five PASSes and you're ready for **[module 04, Wireless security &
 Aircrack-ng](../04-wireless-security-aircrack/)**.

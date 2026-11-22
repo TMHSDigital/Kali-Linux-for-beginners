@@ -1,4 +1,4 @@
-# 03: Network Recon & Nmap `[Level 2: Reconnaissance]`
+# 03: Network recon & Nmap `[Level 2: Reconnaissance]`
 <!-- time: ~4 hours -->
 <!-- outcome: Map a network and choose the right scan for stealth, speed, or depth. -->
 
@@ -130,7 +130,7 @@ scans at the targets only (`10.77.0.10 10.77.0.20`), or add
 # No root needed. Reliable, but the full connection is logged by the target app.
 nmap -sT 10.77.0.10
 
-# [Level 2+: Advanced / Field Ops] SYN "stealth" (-sS): sends SYN, reads the
+# [Level 2+: Advanced] SYN "stealth" (-sS): sends SYN, reads the
 # reply, then sends RST instead of completing the handshake. Faster and less
 # likely to be logged by the application layer. REQUIRES ROOT (raw sockets).
 sudo nmap -sS 10.77.0.10
@@ -143,7 +143,7 @@ the packet layer still sees the SYN. It's stealthier, not invisible.
 ### UDP scanning
 
 ```bash
-# [Level 2+: Advanced / Field Ops] UDP (-sU): slow and tricky. UDP has no
+# [Level 2+: Advanced] UDP (-sU): slow and tricky. UDP has no
 # handshake, so "no reply" is ambiguous (open OR filtered). Nmap relies on ICMP
 # port-unreachable for 'closed'. Scope it tightly to stay sane.
 sudo nmap -sU --top-ports 20 10.77.0.10
@@ -157,7 +157,7 @@ sudo nmap -sU -p 53,67,123,161 10.77.0.10   # DNS, DHCP, NTP, SNMP
 # matches them against Nmap's signature DB to name product + version.
 nmap -sV 10.77.0.10
 
-# [Level 2+: Advanced / Field Ops] OS fingerprinting (-O): infers the OS from
+# [Level 2+: Advanced] OS fingerprinting (-O): infers the OS from
 # TCP/IP stack quirks. Needs root and at least one open + one closed port.
 sudo nmap -O 10.77.0.10
 
@@ -208,7 +208,7 @@ sudo nmap -sS -T1 -f 10.77.0.10       # slow + fragment packets to dodge IDS
 ### Nmap Scripting Engine (NSE)
 
 ```bash
-# [Level 2+: Advanced / Field Ops] Run script categories
+# [Level 2+: Advanced] Run script categories
 nmap --script=default 10.77.0.10          # the '-sC' default set
 nmap -sC -sV 10.77.0.10                    # shorthand: default scripts + version
 nmap --script=safe 10.77.0.10             # non-intrusive checks only

@@ -1,4 +1,4 @@
-# Wireless Hardware, Drivers & VM Passthrough
+# Wi-Fi adapters, drivers, and VM passthrough
 
 Monitor mode and packet injection are **hardware-dependent**. Most built-in
 laptop Wi-Fi cards either can't do monitor mode or can't inject. This guide

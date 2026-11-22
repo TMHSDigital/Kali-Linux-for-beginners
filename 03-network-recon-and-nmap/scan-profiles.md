@@ -1,4 +1,4 @@
-# Nmap Scan Profiles
+# Nmap scan profiles
 
 Copy-pasteable Nmap invocations organized by **assessment scenario**. Replace
 `$T` with your authorized targets and `$NET` with the network you sweep for live
@@ -23,7 +23,7 @@ NET="10.77.0.0/24"    # the lab subnet, used only by the discovery sweeps in A
 > `T="10.77.0.10 10.77.0.20"` fails with `Failed to resolve`. Use a comma list
 > (`10.77.0.10,20`) or a CIDR instead.
 
-> Legend for tags: `[L1]` intermediate · `[L2]` advanced/field-ops. Anything
+> Legend for tags: `[L1]` intermediate · `[L2]` advanced. Anything
 > using `-sS`, `-sU`, `-O`, or OS/packet features needs `sudo`.
 
 ---

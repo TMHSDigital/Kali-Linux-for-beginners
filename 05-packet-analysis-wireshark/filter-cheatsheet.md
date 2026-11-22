@@ -1,4 +1,4 @@
-# Wireshark / tshark Filter Cheat Sheet
+# Wireshark and tshark filters
 
 Cross-referenced tables mapping **what you want to do** → the **exact filter**.
 Remember the golden rule: **capture filters use BPF/tcpdump syntax** (applied

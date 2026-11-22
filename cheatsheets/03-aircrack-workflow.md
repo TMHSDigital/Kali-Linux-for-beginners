@@ -1,4 +1,4 @@
-# Aircrack-ng Workflow Cheat Sheet
+# Aircrack-ng workflow
 
 The end-to-end WPA/WPA2 handshake capture-and-crack workflow for module 04.
 **Own equipment, RF-isolated space, authorized targets only.** Deauth is a

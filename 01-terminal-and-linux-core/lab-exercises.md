@@ -1,4 +1,4 @@
-# Lab Exercises: Terminal & Linux Core
+# Lab exercises: Terminal & Linux core
 
 Work through these in order in a Kali terminal as a normal user: in the
 practice lab that's `./scripts/setup-lab-env.sh user-shell`, which logs you in
