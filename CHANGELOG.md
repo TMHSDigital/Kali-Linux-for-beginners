@@ -41,6 +41,14 @@ wording changes are patches.
   it to the menu button on Escape, and closes when you pick a page.
 - Module 03 expected `-sV` output now shows the nginx version the lab actually
   runs (1.31.6) after the base image bump.
+- Modules 01 and 02 work in the practice lab. The attacker box has a normal
+  `kali` user (sudo password `kali`) and `./scripts/setup-lab-env.sh
+  user-shell` logs in as it, so the prompt, `id` output, and the `/etc/shadow`
+  self-grade match what learners see. The box also has `openssh-server` and
+  `procps`. Module 01 uses `/var/log/dpkg.log` instead of the missing
+  `/var/log/syslog`, module 02 shows real SUID output and a `service` path for
+  the container (no systemd), and its service self-grade no longer passes on
+  "inactive".
 
 ## [1.0.0] - 2026-10-09
 

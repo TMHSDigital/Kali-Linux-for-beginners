@@ -7,6 +7,10 @@ you scan a network or crack a handshake, you must move around a Linux system
 without thinking about it. This module builds that fluency and explains how the
 filesystem and shell behave.
 
+> **Where to run this module:** as a normal user, not root. In the practice lab
+> run `./scripts/setup-lab-env.sh user-shell`, which logs you in as `kali` on
+> the attacker box. On your own Kali install, just open a terminal.
+
 ---
 
 ## 1. How the shell actually works (architecture)
@@ -50,23 +54,28 @@ Linux has **one** tree rooted at `/`, there are no drive letters. Key branches:
 
 ## 2. Reading the prompt (prompt anatomy)
 
-A default Kali prompt tells you *who* and *where* you are, and *how much power*
-you hold:
+Kali's default prompt takes two lines and tells you *who* and *where* you are,
+and *how much power* you hold. This is what `user-shell` shows in the lab:
 
 ```text
-kali@kali:~$
-└┬─┘ └┬─┘ └┬┘└┬┘
- │    │    │  └── prompt symbol: $ = normal user, # = root (full power!)
- │    │    └───── current directory (~ means /home/kali)
- │    └────────── hostname
- └─────────────── username
+┌──(kali㉿attacker)-[~]
+└─$
 ```
+
+- `kali`: the username.
+- `attacker`: the hostname. On a Kali VM it is usually `kali`.
+- `~`: the current directory (`~` means your home, `/home/kali`).
+- `$`: the prompt symbol. `$` = normal user, `#` = root (full power!).
+
+Other systems squeeze the same facts onto one line, like `kali@kali:~$`.
 
 The single most important character is the **last one**:
 
 - `$`: you are a **regular user**. Destructive mistakes are mostly contained.
 - `#`: you are **root** (or in a root shell). Every command runs with total
-  authority; a typo like `rm -rf /` is catastrophic. Respect the `#`.
+  authority; a typo like `rm -rf /` is catastrophic. Respect the `#`. The lab's
+  `./scripts/setup-lab-env.sh shell` is a root shell, which is why modules 03
+  and 05 use it and this module doesn't.
 
 ```bash
 # [Level 0: Fundamental] Who am I, and where am I?
@@ -79,9 +88,11 @@ Expected output:
 
 ```text
 kali
-uid=1000(kali) gid=1000(kali) groups=1000(kali),27(sudo),...
-kali
+uid=1000(kali) gid=1000(kali) groups=1000(kali),27(sudo)
+attacker
 ```
+
+On a Kali VM the last line is your VM's hostname, usually `kali`.
 
 ---
 
@@ -136,10 +147,10 @@ cat /etc/hostname
 cat -n script.sh          # with line numbers
 
 # [Level 0: Fundamental] Page through a long file (q to quit)
-less /etc/services         # scroll, /search, q to exit
-head -n 20 /var/log/syslog # first 20 lines
-tail -n 20 /var/log/syslog # last 20 lines
-tail -f  /var/log/syslog   # FOLLOW: stream new lines live (Ctrl-C to stop)
+less /etc/services          # scroll, /search, q to exit
+head -n 20 /var/log/dpkg.log # first 20 lines (the package install log)
+tail -n 20 /var/log/dpkg.log # last 20 lines
+tail -f  /var/log/dpkg.log   # FOLLOW: stream new lines live (Ctrl-C to stop)
 
 # [Level 0: Fundamental] Create an empty file / update its timestamp
 touch notes.txt
@@ -148,6 +159,10 @@ touch notes.txt
 mkdir recon
 mkdir -p engagement/acme/scans   # creates all three levels at once
 ```
+
+`/var/log/dpkg.log` records every package install, so it exists on any Kali
+box. On a full Kali VM, `sudo journalctl -f` follows the system log the same
+way `tail -f` follows a file.
 
 Expected output of `mkdir -p` then `ls -R`:
 
@@ -204,7 +219,7 @@ find /var/log -mmin -10                       # files modified in last 10 minute
 
 # [Level 0: Fundamental] Search *inside* files for a pattern
 grep "root" /etc/passwd                       # lines containing 'root'
-grep -i "error" /var/log/syslog               # -i = case-insensitive
+grep -i "openssh" /var/log/dpkg.log           # -i = case-insensitive
 grep -r "password" /etc/ 2>/dev/null          # -r = recurse into directories
 grep -n "kali" /etc/passwd                    # -n = show line numbers
 grep -v "^#" /etc/ssh/sshd_config             # -v = INVERT: lines NOT matching

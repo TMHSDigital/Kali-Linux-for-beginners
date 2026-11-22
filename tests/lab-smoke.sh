@@ -26,6 +26,12 @@ for c in attacker web-target ftp-service; do
   check "${c} is running" test "$(docker inspect -f '{{.State.Running}}' "${c}" 2>/dev/null)" = true
 done
 
+echo "== Normal user kali (module 01/02, user-shell)"
+check "kali is uid 1000 and in the sudo group" att 'id kali | grep -q "uid=1000(kali).*(sudo)"'
+check "/etc/shadow is not readable as kali" att '! su kali -c "cat /etc/shadow" 2>/dev/null'
+check "kali can sudo with the password kali" att 'su kali -c "echo kali | sudo -S -k true" 2>/dev/null'
+check "sshd_config exists (module 01 exercise 7)" att 'test -s /etc/ssh/sshd_config'
+
 echo "== web-target (module 03/05)"
 check "serves the ACME login page" att 'curl -fsS http://10.77.0.10/ | grep -q "ACME Intranet"'
 check "POST /login answers 200" att 'curl -fsS -d "username=admin&password=hunter2" http://10.77.0.10/login | grep -q "Received (lab)"'

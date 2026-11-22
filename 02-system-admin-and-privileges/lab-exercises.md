@@ -2,10 +2,14 @@
 
 These exercises create throwaway users, groups, and files, then walk through
 permission changes, a simulated SUID privilege-escalation audit, and service
-management. **Run them on a disposable Kali VM**, not a machine you care about.
-A cleanup section at the end removes everything.
+management. **Run them as the normal user `kali` in the practice lab**
+(`./scripts/setup-lab-env.sh user-shell`, sudo password `kali`) or on a
+disposable Kali VM, never on a machine you care about. A cleanup section at the
+end removes everything, and `./scripts/setup-lab-env.sh reset` gives you a
+fresh lab box.
 
-> You'll need `sudo`. Confirm first:
+> Your prompt should end in `$`, not `#`. If it ends in `#` you are root, and
+> exercise 1 will fail. You'll need `sudo`. Confirm first:
 >
 > ```bash
 > sudo -v && echo "sudo OK"
@@ -160,7 +164,8 @@ SUID-root, an attacker could leverage it to become root. Look each one up on
 misconfiguration is fatal. We make a harmless copy of `bash` SUID-root, show it
 grants a root shell, then remove it immediately.
 
-> **Only on your own Kali VM, never on a shared or production machine.** For
+> **Only in the lab box or your own Kali VM, never on a shared or production
+> machine.** For
 > the few minutes it exists, *any* local user can become root with it.
 >
 > We use `/opt` rather than `/tmp` because many systems mount `/tmp` with the
@@ -181,7 +186,7 @@ ls -l /opt/rootbash                       # note the 's' in -rwsr-xr-x
 Expected:
 
 ```text
-uid=1000(kali) gid=1000(kali) euid=0(root) groups=1000(kali),...
+uid=1000(kali) gid=1000(kali) euid=0(root) groups=1000(kali),27(sudo)
 ```
 
 The **euid=0(root)** proves you executed code as root from an unprivileged
@@ -228,7 +233,7 @@ it.
 sleep 600 &                   # background a long sleep; note the [job] PID
 jobs -l                       # list background jobs with PIDs
 ps aux | grep "[s]leep 600"   # the [s] trick hides grep from its own results
-PID=$(pgrep -f "sleep 600")
+PID=$(pgrep -n -f "sleep 600")   # -n = newest match, in case an old one is around
 echo "sleep PID is $PID"
 kill "$PID"                   # SIGTERM
 ```
@@ -237,15 +242,17 @@ kill "$PID"                   # SIGTERM
 
 ```bash
 sleep 0.5
-pgrep -f "sleep 600" >/dev/null && echo "FAIL: still running" || echo "PASS: process terminated"
+kill -0 "$PID" 2>/dev/null && echo "FAIL: still running" || echo "PASS: process terminated"
 ```
 
 ---
 
-## Exercise 10: Service management with systemd
+## Exercise 10: Service management
 
-**Goal:** Query, start, and inspect a service. (Uses ssh; substitute any
-installed service, or `sudo apt install openssh-server` first.)
+**Goal:** Query, start, and inspect a service. This uses ssh, which the lab box
+has installed (on your own Kali, `sudo apt install openssh-server` first).
+
+On a full Kali VM, systemd manages services:
 
 ```bash
 systemctl status ssh --no-pager || true
@@ -254,12 +261,34 @@ systemctl is-active ssh
 journalctl -u ssh --since "5 min ago" --no-pager | tail -n 5
 ```
 
-**Self-grade:**
+The lab box is a container with no systemd, so `systemctl` there prints
+`System has not been booted with systemd as init system (PID 1). Can't operate.`
+Use the older `service` wrapper instead, which runs the same start script:
 
 ```bash
-systemctl is-active ssh 2>/dev/null | grep -q "active" \
-  && echo "PASS: ssh is active" \
-  || echo "SKIP: ssh not installed or no systemd (WSL/container), that's OK"
+service --status-all          # [ + ] running, [ - ] stopped
+sudo service ssh start
+service ssh status
+```
+
+Expected output in the lab:
+
+```text
+ [ - ]  procps
+ [ - ]  ssh
+ [ - ]  sudo
+Starting OpenBSD Secure Shell server: sshd.
+sshd is running.
+```
+
+**Self-grade (works on both):**
+
+```bash
+if [ -d /run/systemd/system ]; then
+  systemctl is-active ssh 2>/dev/null | grep -qx "active"     && echo "PASS: ssh is active" || echo "FAIL: run sudo systemctl start ssh"
+else
+  service ssh status >/dev/null 2>&1     && echo "PASS: ssh is running" || echo "FAIL: run sudo service ssh start"
+fi
 ```
 
 ---
@@ -267,6 +296,7 @@ systemctl is-active ssh 2>/dev/null | grep -q "active" \
 ## Cleanup: remove everything this lab created
 
 ```bash
+sudo systemctl stop ssh 2>/dev/null || sudo service ssh stop 2>/dev/null
 sudo userdel -r analyst 2>/dev/null
 sudo groupdel pentesters 2>/dev/null
 sudo rm -f /tmp/key.pem /tmp/public.txt /tmp/deploy.sh /tmp/shared-report.txt \
@@ -289,7 +319,7 @@ echo "Lab 02 artifacts removed."
 | 7 | Concrete SUID privesc (and safe cleanup) |
 | 8 | `sudo -l` sudoers enumeration |
 | 9 | Background jobs, `pgrep`, `kill` |
-| 10 | `systemctl` / `journalctl` |
+| 10 | `systemctl` / `journalctl`, or `service` without systemd |
 
-All PASS/SKIP and you're ready for **[module 03, Network Recon &
+All PASS and you're ready for **[module 03, Network Recon &
 Nmap](../03-network-recon-and-nmap/)**.

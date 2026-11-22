@@ -8,6 +8,11 @@ access than you should have. To exploit or defend that, you need to understand
 how Linux models identity, permissions, and processes. This module covers that
 model and how to audit it.
 
+> **Where to run this module:** as the normal user `kali`, so you can see the
+> privilege boundary from below. In the practice lab run
+> `./scripts/setup-lab-env.sh user-shell` (the sudo password is `kali`). On
+> your own Kali install, use your normal account.
+
 ---
 
 ## 1. The Unix privilege model (architecture)
@@ -35,7 +40,7 @@ groups                   # just the group names you belong to
 Expected:
 
 ```text
-uid=1000(kali) gid=1000(kali) groups=1000(kali),27(sudo),...
+uid=1000(kali) gid=1000(kali) groups=1000(kali),27(sudo)
 ```
 
 Membership in **`sudo`** (group 27 on Debian/Kali) is what lets `kali` escalate.
@@ -100,6 +105,10 @@ sudo -i                      # interactive root shell (like 'su -' but via sudo)
 sudo -u www-data whoami      # run as a DIFFERENT non-root user
 sudo -l                      # list what YOU are allowed to run via sudo
 ```
+
+Kali locks the root account (no root password), in the lab and on a VM, so
+`su -` answers `su: Authentication failure`. That's deliberate: use
+`sudo -i` for a root shell.
 
 Key distinction:
 
@@ -286,13 +295,25 @@ find / -perm -4000 -type f -exec ls -la {} \; 2>/dev/null   # SUID w/ details
 # spawn a shell or read arbitrary files, it's a direct path to root.
 ```
 
-Expected (trimmed) output:
+Expected output of the last command in the lab box (dates and sizes vary by
+version):
 
 ```text
--rwsr-xr-x 1 root root  68208 /usr/bin/passwd    <- expected & normal
--rwsr-xr-x 1 root root 232416 /usr/bin/sudo      <- expected & normal
--rwsr-xr-x 1 root root 320000 /usr/bin/find      <- SUSPICIOUS: find can privesc!
+-rwsr-xr-x 1 root root 92680 Oct  5 08:37 /usr/bin/gpasswd
+-rwsr-xr-x 1 root root 80112 Sep 25 23:49 /usr/bin/mount
+-rwsr-xr-x 1 root root 75064 Oct  5 08:37 /usr/bin/chfn
+-rwsr-xr-x 1 root root 57016 Oct  5 08:37 /usr/bin/chsh
+-rwsr-xr-x 1 root root 126280 Oct  5 08:37 /usr/bin/passwd
+-rwsr-xr-x 1 root root 84208 Sep 25 23:49 /usr/bin/su
+-rwsr-xr-x 1 root root 67824 Sep 25 23:49 /usr/bin/umount
+-rwsr-xr-x 1 root root 318744 Sep 28 12:40 /usr/bin/sudo
 ```
+
+All eight are normal: each needs root to do its one job (change a password,
+mount a disk, switch user). A full Kali VM lists more, because it has more
+packages installed. What you're hunting for is something that doesn't belong, like
+a SUID `find`, `vim`, or `bash`, any of which hands out a root shell.
+Exercise 7 in the lab plants one so you can see it.
 
 > **Defender's move:** baseline the SUID set on a clean install
 > (`find / -perm -4000 > /root/suid.baseline`), then diff periodically. Any new
@@ -331,6 +352,12 @@ killall nginx              # kill all processes named nginx
 ## 10. Services with `systemd` `[Level 1: Intermediate]`
 
 Modern Kali uses **systemd** to manage background services ("units").
+
+> **In the lab box:** it's a container with no systemd, so `systemctl` prints
+> `System has not been booted with systemd as init system (PID 1). Can't operate.`
+> Use the older `service` wrapper there: `service --status-all`,
+> `sudo service ssh start`, `service ssh status`. The commands below need a full
+> Kali VM.
 
 ```bash
 # Query state
@@ -380,12 +407,12 @@ journalctl -u ssh --since "10 min ago"
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | `user is not in the sudoers file` | Account lacks sudo rights | Add via `usermod -aG sudo <user>` **as root**, then re-login |
-| `sudo: /etc/sudoers is world writable` | Bad mode on sudoers | `pkexec chmod 440 /etc/sudoers` |
+| `sudo: /etc/sudoers is world writable` | Bad mode on sudoers | `pkexec chmod 440 /etc/sudoers`; in the lab, `chmod 440 /etc/sudoers` from `./scripts/setup-lab-env.sh shell` (already root) |
 | Group change "didn't take" | Group membership is read at login | Log out/in, or run `newgrp <group>` |
 | `chmod`/`chown` "Operation not permitted" | You don't own the file | Prefix with `sudo` |
 | SSH refuses your key: "permissions too open" | Key not `600`, `~/.ssh` not `700` | `chmod 600 key; chmod 700 ~/.ssh` |
 | `systemctl` "Failed to connect to bus" | Not running under systemd (e.g. WSL, container) | Use `service <name> start` or run the daemon directly |
-| Locked out of root after editing sudoers | Syntax error | Boot to recovery / use `pkexec`; always edit with `visudo` |
+| Locked out of root after editing sudoers | Syntax error | Boot to recovery / use `pkexec`; in the lab, fix it from `./scripts/setup-lab-env.sh shell` or run `reset`. Always edit with `visudo` |
 
 ---
 

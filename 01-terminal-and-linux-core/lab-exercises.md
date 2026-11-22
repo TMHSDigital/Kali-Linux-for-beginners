@@ -1,6 +1,8 @@
 # Lab Exercises: Terminal & Linux Core
 
-Work through these in order in a Kali terminal. Each task has a **goal**, the
+Work through these in order in a Kali terminal as a normal user: in the
+practice lab that's `./scripts/setup-lab-env.sh user-shell`, which logs you in
+as `kali`. Each task has a **goal**, the
 **commands** to try, and a **self-grading check**, a command that prints
 `PASS` when you got it right. If a check fails, re-read the relevant section of
 the module README and try again.
@@ -148,8 +150,9 @@ clean=$(grep -v "^#" /etc/ssh/sshd_config | grep -v "^$" | wc -l)
 [ "$clean" -lt "$raw" ] && echo "PASS ($clean of $raw lines)" || echo "FAIL"
 ```
 
-*(If `/etc/ssh/sshd_config` doesn't exist, `sudo apt install openssh-server`
-first, or substitute any config file in `/etc`.)*
+*(The lab box has `/etc/ssh/sshd_config`. On your own Kali install, if it
+doesn't exist, `sudo apt install openssh-server` first, or substitute any
+config file in `/etc`.)*
 
 ---
 
@@ -196,13 +199,12 @@ shell in use, with a count of how many accounts use each, using only pipes.
 cut -d: -f7 /etc/passwd | sort | uniq -c | sort -rn
 ```
 
-Expected output shape:
+Expected output in the lab box (a Kali VM has more accounts, so bigger counts):
 
 ```text
-     30 /usr/sbin/nologin
-      3 /bin/bash
+     19 /usr/sbin/nologin
+      2 /bin/bash
       1 /bin/sync
-      ...
 ```
 
 **Self-grade:**

@@ -40,7 +40,8 @@ Usage: ./scripts/setup-lab-env.sh [action]
 
 Actions:
   up        verify Docker and start the lab (the default)
-  shell     open a bash shell on the attacker box
+  shell     open a root shell on the attacker box (modules 03-05)
+  user-shell  open a shell as the normal user kali (modules 01-02)
   status    show container status
   down      stop and remove the lab
   reset     throw away the lab containers and start fresh, pristine ones
@@ -187,6 +188,16 @@ lab_shell() {
   exec docker exec -it attacker bash
 }
 
+lab_user_shell() {
+  if [[ "$(docker inspect -f '{{.State.Running}}' attacker 2>/dev/null || true)" != "true" ]]; then
+    info "Attacker container is not running; starting the lab first ..."
+    lab_up
+  fi
+  info "Entering the attacker box as the normal user kali (sudo password: kali)."
+  # MSYS_NO_PATHCONV: stop Git Bash on Windows rewriting /home/kali to a Windows path.
+  MSYS_NO_PATHCONV=1 exec docker exec -it -u kali -w /home/kali attacker bash -l
+}
+
 lab_down() {
   info "Stopping the practice target lab ..."
   compose down
@@ -217,10 +228,11 @@ main() {
   case "${action}" in
     up)     validate_network; lab_up ;;
     shell)  lab_shell ;;
+    user-shell) lab_user_shell ;;
     down)   lab_down ;;
     status) lab_status ;;
     reset)  lab_reset ;;
-    *)      die "Unknown action '${action}'. Use: up | shell | status | down | reset (see --help)" 1 ;;
+    *)      die "Unknown action '${action}'. Use: up | shell | user-shell | status | down | reset (see --help)" 1 ;;
   esac
 }
 

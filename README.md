@@ -46,8 +46,9 @@ take them to hosted platforms like TryHackMe or Hack The Box Academy.
 ```bash
 git clone https://github.com/TMHSDigital/Kali-Linux-for-beginners.git
 cd Kali-Linux-for-beginners
-./scripts/setup-lab-env.sh          # check Docker, start the lab
-./scripts/setup-lab-env.sh shell    # shell on the Kali attacker: start module 01 here
+./scripts/setup-lab-env.sh              # check Docker, start the lab
+./scripts/setup-lab-env.sh user-shell   # shell as the normal user kali: modules 01-02
+./scripts/setup-lab-env.sh shell        # root shell on the attacker: modules 03-05
 ```
 
 The first run downloads Kali, so give it a few minutes. Stop the lab with
@@ -56,7 +57,7 @@ The first run downloads Kali, so give it a few minutes. Stop the lab with
 won't start, see [Lab troubleshooting](guides/lab-troubleshooting.md).
 
 **No Docker?** Click the **Codespaces** badge above. The lab builds and starts
-in a browser-based VS Code. Then run `./scripts/setup-lab-env.sh shell`.
+in a browser-based VS Code. Then run `./scripts/setup-lab-env.sh user-shell`.
 Everything except live wireless (module 04) works there. Codespaces is free up
 to GitHub's monthly quota, so stop the codespace when you're done.
 
