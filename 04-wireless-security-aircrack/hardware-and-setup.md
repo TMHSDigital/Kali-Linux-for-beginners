@@ -225,7 +225,7 @@ nmcli device status                       # confirm the card is 'connected' agai
 
 ## Quick decision guide
 
-- **Just starting / want zero hassle** → Atheros **AR9271** (Alfa AWUS036NHA).
-- **Need 5 GHz** → **RTL8812AU** (Alfa AWUS036ACH) + DKMS driver, or MT7612U.
-- **Running in a VM** → VMware + USB passthrough is the most reliable combo.
-- **On WSL2** → do offline capture analysis only; get real hardware for live RF.
+- **Just starting, or want the least setup:** Atheros **AR9271** (Alfa AWUS036NHA).
+- **Need 5 GHz:** **RTL8812AU** (Alfa AWUS036ACH) with the DKMS driver, or MT7612U.
+- **Running in a VM:** VMware with USB passthrough is the most reliable combination.
+- **On WSL2:** do offline capture analysis only; use real hardware for live RF.

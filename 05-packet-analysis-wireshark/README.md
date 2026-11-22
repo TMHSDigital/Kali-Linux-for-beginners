@@ -4,7 +4,7 @@
 
 Once you can capture traffic, the skill becomes *reading* it: reconstructing
 what happened on the wire, extracting cleartext secrets from insecure protocols,
-and, crucially, articulating the fix. This module covers the capture engine,
+and explaining how to fix it. This module covers the capture engine,
 the two very different filter languages, the core display filters you'll reach
 for daily, session reassembly, credential extraction, and headless analysis with
 `tshark`. Practice against the bundled Docker lab.
@@ -182,7 +182,7 @@ see the traffic. Using the Docker lab:
    packets reach the file, and stop the capture with `kill %1`.
 3. Open `web.pcapng` (or use `tshark -r web.pcapng -Y ...`) and apply:
    `http.request.method == "POST"`.
-4. Select the POST → expand **HTML Form URL Encoded** in the detail pane, or
+4. Select the POST and expand **HTML Form URL Encoded** in the detail pane, or
    **Follow → HTTP Stream**. The `username=admin&password=hunter2` body is right
    there in cleartext.
 
@@ -305,5 +305,5 @@ Every extraction above has a one-line fix:
 ---
 
  Prove it on the lab with the self-grading
-**[lab-exercises.md](lab-exercises.md)**. A cross-referenced table of
-use-cases → exact filters is in **[filter-cheatsheet.md](filter-cheatsheet.md)**.
+**[lab-exercises.md](lab-exercises.md)**. The filter for each common task is
+in **[filter-cheatsheet.md](filter-cheatsheet.md)**.

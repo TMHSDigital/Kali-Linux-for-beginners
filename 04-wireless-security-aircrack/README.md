@@ -262,8 +262,8 @@ key exchange with two decisive properties:
 - **Forward secrecy.** Compromising the passphrase later does not decrypt past
   traffic.
 
-The practical upshot: the capture→deauth→dictionary chain that defines this
-module simply **does not work against a correctly configured WPA3-SAE + PMF
+In practice, the capture, deauth, and dictionary attack that this module
+teaches **does not work against a correctly configured WPA3-SAE + PMF
 network.** (WPA3 has had implementation bugs, e.g. the "Dragonblood" side
 channels, but the protocol design defeats the classic aircrack workflow.)
 

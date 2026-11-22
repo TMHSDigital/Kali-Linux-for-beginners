@@ -286,7 +286,7 @@ Beyond rwx there are three special bits:
   file's owner can delete it, even though the dir is world-writable.
 
 ```bash
-# [Level 2+: Advanced] Audit SUID binaries, THE classic first step
+# [Level 2+: Advanced] Audit SUID binaries, the usual first step
 find / -perm -u=s -type f 2>/dev/null            # all SUID files
 find / -perm -g=s -type f 2>/dev/null            # all SGID files
 find / -perm -4000 -type f -exec ls -la {} \; 2>/dev/null   # SUID w/ details

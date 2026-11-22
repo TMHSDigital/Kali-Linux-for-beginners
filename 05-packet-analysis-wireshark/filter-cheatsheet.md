@@ -1,6 +1,6 @@
 # Wireshark and tshark filters
 
-Cross-referenced tables mapping **what you want to do** → the **exact filter**.
+Tables of **what you want to do** and the **exact filter** that does it.
 Remember the golden rule: **capture filters use BPF/tcpdump syntax** (applied
 before capture), **display filters use `protocol.field` syntax** (applied
 after). They are not interchangeable.

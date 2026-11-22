@@ -8,6 +8,12 @@ wording changes are patches.
 ## [Unreleased]
 
 ### Changed
+- Restyled the documentation site as plain documentation: system fonts,
+  standard underlined links, square corners, and rules instead of cards,
+  shadows, and per-level colours. The home page drops its hero and buttons
+  for a short introduction, the authorization warning, and the module list.
+- Page titles and level tags are plain and sentence case ("Nmap reference",
+  "Lab exercises", `[Level 2+: Advanced]`). URLs are unchanged.
 - Redesigned the documentation site. The home page lists the modules with what
   each one teaches, its level, and its time, followed by the lab hosts and the
   reference pages. Doc pages gain an "On this page" outline with scroll

@@ -4,9 +4,9 @@
 
 Reconnaissance answers three questions before any exploitation: *what hosts are
 alive, what services do they run, and what versions are those services?* Nmap is
-the canonical tool for all three. This module explains the TCP/IP mechanics that
-make scanning work, then drills each scan type with the flags you'll actually
-use in the field, always against the isolated Docker lab from the repo root.
+the standard tool for all three. This module explains the TCP/IP mechanics that
+make scanning work, then goes through each scan type with the flags you'll
+actually use, always against the isolated Docker lab from the repo root.
 
 > **Authorized targets only.** Everything here should be run against
 > `10.77.0.0/24` (the bundled lab) or infrastructure you own / have written
