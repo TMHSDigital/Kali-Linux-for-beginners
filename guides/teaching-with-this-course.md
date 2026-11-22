@@ -49,8 +49,8 @@ to taste.
 |---------|-------|----------|
 | 1 | Ground rules, lab setup, [01. Terminal & Linux Core](../01-terminal-and-linux-core/) | Module 01 lab exercises (self-grading) |
 | 2 | [02. System Admin & Privileges](../02-system-admin-and-privileges/) | Module 02 lab exercises (self-grading) |
-| 3 | [03. Network Recon & Nmap](../03-network-recon-and-nmap/) | Scan the lab and turn the XML into a table with `parse-nmap-xml.py` |
-| 4 | [05. Packet Analysis & Wireshark](../05-packet-analysis-wireshark/) | Capture the lab's cleartext HTTP and FTP logins and recover the credentials |
+| 3 | [03. Network Recon & Nmap](../03-network-recon-and-nmap/) | Module 03 lab exercises (self-grading): sweep, full port scan, versions, `parse-nmap-xml.py` |
+| 4 | [05. Packet Analysis & Wireshark](../05-packet-analysis-wireshark/) | Module 05 lab exercises (self-grading): recover the HTTP and FTP credentials and carve a file from the capture |
 | 5 | [04. Wireless Security & Aircrack-ng](../04-wireless-security-aircrack/) | Demo or small-group work, see below |
 | 6 | Review and defense | Each learner writes up one finding: what they did, the evidence, and the fix |
 
@@ -74,10 +74,12 @@ WPA3/PMF defenses.
 
 ## Checking progress
 
-- Modules 01 and 02 have self-grading lab exercises: each step prints `PASS` or
-  a `FAIL` message that says what to fix.
-- For modules 03 and 05, ask for evidence instead: the parsed nmap table, or the
-  recovered credentials plus the display filter that found them.
+- Modules 01, 02, 03, and 05 have self-grading lab exercises: each step prints
+  `PASS` or a `FAIL` message that says what to fix. Answers that are secrets
+  are checked against a SHA-256 hash, so the pages don't give them away.
+- For module 04, and for the write-up in session 6, ask for evidence instead:
+  the parsed nmap table, or the recovered credentials plus the display filter
+  that found them.
 - The documentation site tracks which pages a learner has marked done, stored in
   their own browser only. Nothing is sent anywhere, so it's a self-check, not a
   gradebook.

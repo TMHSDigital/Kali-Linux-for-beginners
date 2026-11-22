@@ -22,6 +22,11 @@ wording changes are patches.
   table, folded reference sections, and contributor and security pointers.
 
 ### Added
+- Self-grading lab exercises for module 03 (host sweep, full port scan,
+  version detection, `-oA` plus `parse-nmap-xml.py`, confirming the
+  `ftp-anon` finding) and module 05 (recover the HTTP and FTP credentials,
+  carve a transferred file out of a capture, name the fix). Secret answers are
+  checked by SHA-256 hash.
 - Site search links to the section where the match is, not just the page, so
   a flag that only appears in a code block (`nmap -sS`) lands on the right
   section. Typing the whole command ranks exact matches first.

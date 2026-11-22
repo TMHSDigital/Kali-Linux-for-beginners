@@ -26,7 +26,7 @@
 Five modules take you from the Linux shell to network scanning, wireless
 attacks, and packet analysis. Every technique gives the command, the output it
 prints in the practice lab, and how a defender spots or stops it. Lab checks in
-modules 01 and 02 print PASS or FAIL so you know when you have it.
+modules 01, 02, 03, and 05 print PASS or FAIL so you know when you have it.
 
 It is written for complete beginners. You need a laptop with 8 GB of RAM and
 Docker, or a free GitHub account to use Codespaces instead. Module 04's live

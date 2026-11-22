@@ -304,5 +304,6 @@ Every extraction above has a one-line fix:
 
 ---
 
- A cross-referenced table of use-cases → exact filters is in
-**[filter-cheatsheet.md](filter-cheatsheet.md)**.
+ Prove it on the lab with the self-grading
+**[lab-exercises.md](lab-exercises.md)**. A cross-referenced table of
+use-cases → exact filters is in **[filter-cheatsheet.md](filter-cheatsheet.md)**.

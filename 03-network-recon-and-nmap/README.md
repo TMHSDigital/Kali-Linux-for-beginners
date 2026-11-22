@@ -371,5 +371,6 @@ many ports) sweeps, and prefer DROP to slow attackers down.
 
 ---
 
- Ready-to-run, scenario-organized commands live in
-**[scan-profiles.md](scan-profiles.md)**.
+ Prove it on the lab with the self-grading
+**[lab-exercises.md](lab-exercises.md)**. Ready-to-run, scenario-organized
+commands live in **[scan-profiles.md](scan-profiles.md)**.
