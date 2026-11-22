@@ -893,8 +893,8 @@ def hero_terminal() -> str:
         else:
             lines.append(f'<span class="t-{kind}">{esc(text)}</span>')
     return f"""<figure class="terminal">
-            <figcaption class="terminal-bar">attacker (10.77.0.5): a real scan of the lab</figcaption>
             <pre class="terminal-body">{chr(10).join(lines)}</pre>
+            <figcaption>Output from module 03, run on the attacker in the lab.</figcaption>
           </figure>"""
 
 
@@ -908,7 +908,7 @@ def lab_map(hosts_list: List[Tuple[str, str, str, str]],
              'markerHeight="7" orient="auto-start-reverse"><path class="lm-arrowhead" d="M0 0 10 5 0 10z"/>'
              '</marker></defs>']
     # Your computer, left.
-    parts.append(f'<rect class="lm-box lm-you" x="1" y="{TOP}" width="230" height="{BOX_H}" rx="8"/>'
+    parts.append(f'<rect class="lm-box lm-you" x="1" y="{TOP}" width="230" height="{BOX_H}"/>'
                  f'<text class="lm-name" x="20" y="{TOP + 32}">Your computer</text>'
                  f'<text class="lm-note" x="20" y="{TOP + 56}">runs Docker</text>'
                  f'<text class="lm-note" x="20" y="{TOP + 78}">workspace/ is /root/work</text>')
@@ -923,7 +923,7 @@ def lab_map(hosts_list: List[Tuple[str, str, str, str]],
         published = ports.get(name, [])
         detail = esc(role) + (f" &#183; {esc(published[0][2])}/tcp" if published else "")
         parts.append(f'<line class="lm-link" x1="{cx}" y1="{BUS}" x2="{cx}" y2="{TOP}"/>'
-                     f'<rect class="lm-box" x="{x}" y="{TOP}" width="{BOX_W}" height="{BOX_H}" rx="8"/>'
+                     f'<rect class="lm-box" x="{x}" y="{TOP}" width="{BOX_W}" height="{BOX_H}"/>'
                      f'<text class="lm-name" x="{x + 18}" y="{TOP + 32}">{esc(name)}</text>'
                      f'<text class="lm-ip" x="{x + 18}" y="{TOP + 56}">{esc(ip)}</text>'
                      f'<text class="lm-note" x="{x + 18}" y="{TOP + 78}">{detail}</text>')
@@ -966,7 +966,6 @@ def landing_body(sections: List[Dict], docs_meta: Dict[str, Dict],
         lead = sec["items"][0]
         num, name = module_name(sec)
         lvl = level_num(lead["level"])
-        label = lead["level"].split(":", 1)[-1].strip() if lead["level"] else ""
         outcome = lead["outcome"] or docs_meta.get(lead["path"], {}).get("description", "")
         subs = "".join(f'<li><a href="{esc(it["url"])}">{esc(short_title(sec, i, it))}</a></li>'
                        for i, it in enumerate(sec["items"]) if i)
@@ -977,7 +976,7 @@ def landing_body(sections: List[Dict], docs_meta: Dict[str, Dict],
               <p>{esc(outcome)}</p>
               {f'<ul class="module-pages">{subs}</ul>' if subs else ""}
             </div>
-            <p class="module-meta"><span class="module-level">Level {esc(lvl)} &middot; {esc(label)}</span>
+            <p class="module-meta"><span class="module-level">Level {esc(lvl)}</span>
               <span>{esc(lead["time"])}</span><span class="module-progress" data-progress></span></p>
           </li>""")
 
@@ -991,9 +990,10 @@ def landing_body(sections: List[Dict], docs_meta: Dict[str, Dict],
               if checked else "")
 
     lab_cmds = "\n".join(
-        f'<span class="t-prompt">$</span> {esc(cmd):<34}<span class="t-dim"># {esc(note)}</span>'
+        f'<span class="t-prompt">$</span> {esc(cmd):<39}<span class="t-dim"># {esc(note)}</span>'
         for cmd, note in (("./scripts/setup-lab-env.sh", "build and start the lab"),
-                          ("./scripts/setup-lab-env.sh shell", "open a shell on the attacker")))
+                          ("./scripts/setup-lab-env.sh user-shell", "normal user kali: modules 01-02"),
+                          ("./scripts/setup-lab-env.sh shell", "root on the attacker: modules 03-05")))
 
     refs = []
     for sec in others:
@@ -1003,31 +1003,30 @@ def landing_body(sections: List[Dict], docs_meta: Dict[str, Dict],
                  f'<div class="ref">{"".join(refs)}</div></section>') if refs else ""
 
     return f"""<div id="doc" class="landing">
-        <section class="hero">
-          <div class="hero-copy">
-            <h1>{esc(SITE_TITLE)}</h1>
-            <p class="hero-lead">{esc(SITE_TAGLINE)}</p>
-            <div class="hero-actions">
-              <a id="start-btn" class="btn btn-primary" href="{esc(first)}"><span>Start module 01</span>
-                {icon("arrow-right")}</a>
-              <a class="btn" href="overview/#quickstart">Set up the lab</a>
-            </div>
-            <p class="hero-facts">{len(modules)} modules &middot; about {total_h:g} hours &middot; free and
-              MIT licensed</p>
-          </div>
-          {hero_terminal()}
+        <section class="landing-intro">
+          <h1>{esc(SITE_TITLE)}</h1>
+          <p>A free course in {len(modules)} modules, about {total_h:g} hours in total. It starts at your
+            first shell command and ends with reading a password out of captured network traffic. Every
+            command runs against a small Docker lab on your own computer, and each one comes with the output
+            it prints there and how a defender would spot it.</p>
+          <p><a id="start-btn" href="{esc(first)}"><span>Start with module 01</span></a>. If you haven't set up
+            the lab yet, do that first: <a href="#lab-h">the practice lab</a>.</p>
+          <p class="safety"><strong>Authorized targets only.</strong> Using these techniques against systems,
+            networks, or wireless access points you do not own or lack written permission to test is illegal
+            in most jurisdictions. Every example in this course targets the lab, <code>127.0.0.1</code>, or
+            documentation address ranges.</p>
         </section>
 
         <section class="band" aria-labelledby="course-h">
-          <h2 id="course-h">Course</h2>
-          <p class="band-lead">Take the modules in order. Every technique gives the command, the output it
-            prints in the lab, and how a defender spots or stops it. {checks}Pages you mark complete are
-            remembered in this browser.</p>
+          <h2 id="course-h">Modules</h2>
+          <p class="band-lead">Take them in order. Every technique gives the command, the output it prints in
+            the lab, and how a defender spots or stops it. {checks}Pages you mark complete are remembered in
+            this browser.</p>
           <ol class="modules">{"".join(rows)}</ol>
         </section>
 
         <section class="band" aria-labelledby="lab-h">
-          <h2 id="lab-h">Practice lab</h2>
+          <h2 id="lab-h">The practice lab</h2>
           <p class="band-lead">Docker Compose starts a Kali attacker and two deliberately insecure targets on
             an isolated bridge network, <code>10.77.0.0/24</code>. Every example in the course runs against
             it. No Docker? <a href="https://codespaces.new/{REPO}" rel="noopener">Open the repo in
@@ -1039,18 +1038,10 @@ def landing_body(sections: List[Dict], docs_meta: Dict[str, Dict],
             <tbody>{hosts}</tbody>
           </table></div>
           <pre class="lab-cmd"><code>{lab_cmds}</code></pre>
+          {hero_terminal()}
         </section>
 
         {reference}
-
-        <section class="band" aria-labelledby="safety-h">
-          <div class="safety">
-            <h2 id="safety-h">Authorized targets only</h2>
-            <p>Using these techniques against systems, networks, or wireless access points you do not own or
-              lack written permission to test is illegal in most jurisdictions. Every example in this course
-              targets the lab, <code>127.0.0.1</code>, or documentation address ranges.</p>
-          </div>
-        </section>
       </div>"""
 
 
